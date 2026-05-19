@@ -241,7 +241,6 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
           <option value="うどん">うどん</option>
           <option value="生そば">生そば</option>
           <option value="中国">中国</option>
-          <option value="小明">小明</option>
           <option value="カフェ">カフェ</option>
           <option value="東兵衛">東兵衛</option>
         </select>
@@ -323,7 +322,7 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
             <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
             <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
             <option value="生そば">生そば</option><option value="中国">中国</option>
-            <option value="小明">小明</option><option value="カフェ">カフェ</option>
+            <option value="カフェ">カフェ</option>
             <option value="東兵衛">東兵衛</option>
           </select>
         </div>
@@ -430,7 +429,7 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
         <button class="fb" onclick="ovFilter('うどん',this)">うどん</button>
         <button class="fb" onclick="ovFilter('生そば',this)">生そば</button>
         <button class="fb" onclick="ovFilter('中国',this)">中国</button>
-        <button class="fb" onclick="ovFilter('小明',this)">小明</button>
+        
         <button class="fb" onclick="ovFilter('カフェ',this)">カフェ</button>
         <button class="fb" onclick="ovFilter('東兵衛',this)">東兵衛</button>
       </div>
@@ -463,7 +462,7 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
             <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
             <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
             <option value="生そば">生そば</option><option value="中国">中国</option>
-            <option value="小明">小明</option><option value="カフェ">カフェ</option>
+            <option value="カフェ">カフェ</option>
             <option value="東兵衛">東兵衛</option>
           </select>
         </div>
@@ -491,7 +490,7 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
             <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
             <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
             <option value="生そば">生そば</option><option value="中国">中国</option>
-            <option value="小明">小明</option><option value="カフェ">カフェ</option>
+            <option value="カフェ">カフェ</option>
             <option value="東兵衛">東兵衛</option>
           </select>
         </div>
@@ -539,7 +538,7 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
             <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
             <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
             <option value="生そば">生そば</option><option value="中国">中国</option>
-            <option value="小明">小明</option><option value="カフェ">カフェ</option>
+            <option value="カフェ">カフェ</option>
             <option value="東兵衛">東兵衛</option>
           </select>
         </div>
@@ -562,8 +561,8 @@ let allData=[],allStaff=[],ovBrand='all';
 let chartOvTime=null,chartOvBrand=null,chartDvBar=null,chartStDaily=null,chartStTime=null,chartMyDaily=null,chartMyTime=null;
 let storePeriod='30',brandStoreMap={};
 
-const BC={'焼肉':'b-y','焼肉AZUMA':'b-ya','あずま':'b-az','うどん':'b-u','生そば':'b-s','中国':'b-cn','小明':'b-km','カフェ':'b-f','東兵衛':'b-t'};
-const BCLR={'焼肉':'#e50012','焼肉AZUMA':'#b8000e','あずま':'#378ADD','うどん':'#1D9E75','生そば':'#7F77DD','中国':'#BA7517','小明':'#D4537E','カフェ':'#D4537E','東兵衛':'#0F8B8B'};
+const BC={'焼肉':'b-y','焼肉AZUMA':'b-ya','あずま':'b-az','うどん':'b-u','生そば':'b-s','中国':'b-cn','カフェ':'b-f','東兵衛':'b-t'};
+const BCLR={'焼肉':'#e50012','焼肉AZUMA':'#b8000e','あずま':'#378ADD','うどん':'#1D9E75','生そば':'#7F77DD','中国':'#BA7517','カフェ':'#D4537E','東兵衛':'#0F8B8B'};
 const TC={'券売機':'tp-vm','24H':'tp-24','券売機24H':'tp-v2'};
 
 // ── ログイン ──
@@ -950,7 +949,7 @@ async function loadDivision(){
   if(dateVal&&dateVal!=='all') data=data.filter(r=>r.report_date===dateVal);
   const label=dateVal==='all'?`全期間（${[...new Set(allData.map(r=>r.report_date))].length}日分）`:(()=>{const[y,m,d]=dateVal.split('-');return`${y}年${parseInt(m)}月${parseInt(d)}日`;})();
   document.getElementById('dv-label').textContent=label;
-  const brands=['焼肉','焼肉AZUMA','あずま','うどん','生そば','中国','小明','カフェ','東兵衛'];
+  const brands=['焼肉','焼肉AZUMA','あずま','うどん','生そば','中国','カフェ','東兵衛'];
   const bm={};brands.forEach(b=>{bm[b]={total:0,guests:0,lunch:0,dinner:0,to:0,uber:0,stores:new Set()};});
   data.forEach(r=>{if(!bm[r.brand])return;const b=bm[r.brand];b.total+=r.total_sales;b.guests+=r.total_guests;b.lunch+=r.lunch_sales;b.dinner+=r.dinner_sales;b.to+=r.to_sales;b.uber+=r.uber_sales;b.stores.add(r.store);});
   const gTotal=data.reduce((s,r)=>s+r.total_sales,0);
@@ -1153,7 +1152,7 @@ function filterPwTable(){
 }
 
 function renderPwTable(list){
-  const BC2={'焼肉':'b-y','焼肉AZUMA':'b-ya','あずま':'b-az','うどん':'b-u','生そば':'b-s','中国':'b-cn','小明':'b-km','カフェ':'b-f','東兵衛':'b-t'};
+  const BC2={'焼肉':'b-y','焼肉AZUMA':'b-ya','あずま':'b-az','うどん':'b-u','生そば':'b-s','中国':'b-cn','カフェ':'b-f','東兵衛':'b-t'};
   document.getElementById('pw-tbody').innerHTML=list.length===0?'<tr><td colspan="6" class="nd">該当する店舗がありません</td></tr>':
     list.map(r=>`<tr id="pw-row-${r.id}">
       <td style="font-weight:600">${r.store_name}</td>
