@@ -654,11 +654,16 @@ async function startApp(){
   document.getElementById('nav-user').textContent=currentUser.store_name;
   buildNav();
   await loadStaffData();
+  // storeAuthCacheが空なら読み込む（管理者ログイン時も必要）
+  if(!storeAuthCache.length){
+    const{data}=await sb.from('store_auth').select('store_name,brand,store_no,is_admin').eq('is_admin',false).order('brand').order('store_name');
+    storeAuthCache=data||[];
+  }
+  prefillStoreForm();
   if(currentUser.is_admin){
     showPage('overall',document.querySelector('.nav-tab'));
   } else {
     showPage('form',document.querySelector('.nav-tab'));
-    prefillStoreForm();
   }
 }
 
@@ -727,6 +732,7 @@ function showPage(name,btn){
   else if(name==='division') loadDivision();
   else if(name==='mystore') loadMyStore();
   else if(name==='pw-mgmt') loadPwMgmt();
+  else if(name==='form') prefillStoreForm();
 }
 
 function onAdminBrandChange(){
