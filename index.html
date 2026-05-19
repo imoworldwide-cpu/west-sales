@@ -3,488 +3,910 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ウエスト 売上報告</title>
+<title>WEST 売上報告システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
-  :root {
-    --bg:#f7f6f2;--surface:#ffffff;--border:rgba(0,0,0,0.08);--border-strong:rgba(0,0,0,0.15);
-    --text:#1a1a18;--text-muted:#6b6b66;--text-hint:#9c9a92;
-    --accent:#1a3a2a;--accent-light:#e8f0eb;--accent-mid:#2d6b47;
-    --red:#c0392b;--red-light:#fdf0ee;--amber:#b8651a;--amber-light:#fef5e7;
-    --blue:#1a4a7a;--blue-light:#eaf1fb;--purple:#4a1a7a;--purple-light:#f0eaf9;
-    --font:'Noto Sans JP',sans-serif;--mono:'DM Mono',monospace;
-    --radius:10px;--radius-lg:16px;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
-  .nav{background:var(--accent);padding:0 20px;display:flex;align-items:center;height:52px;position:sticky;top:0;z-index:100;}
-  .nav-brand{color:#fff;font-weight:700;font-size:15px;letter-spacing:.03em;margin-right:24px;flex-shrink:0;}
-  .nav-tabs{display:flex;height:100%;}
-  .nav-tab{color:rgba(255,255,255,0.6);padding:0 16px;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:13px;height:100%;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
-  .nav-tab.active{color:#fff;border-bottom-color:#6fcf97;}
-  .nav-tab:hover:not(.active){color:rgba(255,255,255,0.85);}
-  .nav-status{margin-left:auto;font-size:11px;padding:3px 10px;border-radius:100px;flex-shrink:0;}
-  .status-ok{background:rgba(111,207,151,0.2);color:#6fcf97;}
-  .status-err{background:rgba(192,57,43,0.2);color:#ff7675;}
-  .status-loading{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);}
-  .page{display:none;padding:20px 16px;max-width:820px;margin:0 auto;}
-  .page.active{display:block;}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --red:#e50012;--red-dark:#b8000e;--red-light:#fdf0f1;--red-mid:rgba(229,0,18,0.08);
+  --bg:#f9f8f6;--surface:#fff;--border:rgba(0,0,0,0.07);--border-strong:rgba(0,0,0,0.13);
+  --text:#1a1916;--text-muted:#666460;--text-hint:#a09d97;
+  --green:#1a7a3a;--green-light:#edf6f1;
+  --font:'Noto Sans JP',sans-serif;--mono:'DM Mono',monospace;
+  --r:10px;--rlg:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
 
-  /* FORM */
-  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px;}
-  .form-section-title{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-hint);text-transform:uppercase;margin-bottom:12px;}
-  .form-row{display:grid;gap:10px;margin-bottom:10px;}
-  .form-row.col2{grid-template-columns:1fr 1fr;}
-  .form-row.col3{grid-template-columns:1fr 1fr 1fr;}
-  .form-row.col4{grid-template-columns:1fr 1fr 1fr 1fr;}
-  .form-group{display:flex;flex-direction:column;gap:4px;}
-  .form-label{font-size:11px;font-weight:500;color:var(--text-muted);}
-  .form-label .req{color:var(--red);margin-left:2px;}
-  input[type="text"],input[type="date"],input[type="number"],select{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg);-webkit-appearance:none;transition:border-color .15s,box-shadow .15s;}
-  input[type="number"]{font-family:var(--mono);}
-  input:focus,select:focus{outline:none;border-color:var(--accent-mid);box-shadow:0 0 0 3px rgba(45,107,71,0.12);background:#fff;}
-  .pfx{position:relative;}
-  .pfx-sym{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
-  .pfx input{padding-left:20px;}
-  .divider{height:1px;background:var(--border);margin:16px 0;}
-  .sales-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .s-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px;}
-  .s-box-label{font-size:11px;color:var(--text-muted);font-weight:500;margin-bottom:7px;}
-  .s-row{display:flex;gap:6px;margin-bottom:5px;align-items:center;}
-  .s-row:last-child{margin-bottom:0;}
-  .s-sub{font-size:10px;color:var(--text-hint);min-width:28px;flex-shrink:0;}
-  .btn-submit{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:8px;}
-  .btn-submit:hover{background:var(--accent-mid);}
-  .btn-submit:disabled{background:var(--text-hint);cursor:not-allowed;}
-  .alert{display:none;border-radius:var(--radius);padding:12px 16px;font-size:14px;font-weight:500;text-align:center;margin-top:10px;}
-  .alert-success{background:var(--accent-light);border:1px solid rgba(45,107,71,0.2);color:var(--accent-mid);}
-  .alert-error{background:var(--red-light);border:1px solid rgba(192,57,43,0.2);color:var(--red);}
-  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
-  @keyframes spin{to{transform:rotate(360deg);}}
+/* ── LOGIN ── */
+#login-screen{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#1a0003 0%,#3a0008 50%,#1a0003 100%);
+  padding:20px;
+}
+.login-logo{margin-bottom:32px;}
+.login-logo svg{height:50px;width:auto;}
+.login-card{
+  background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:380px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.login-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;text-align:center;}
+.login-sub{font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:28px;}
+.login-field{margin-bottom:16px;}
+.login-label{font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px;letter-spacing:.03em;}
+.login-input{
+  width:100%;padding:12px 14px;border:1.5px solid var(--border-strong);border-radius:var(--r);
+  font-family:var(--font);font-size:15px;color:var(--text);background:var(--bg);
+  transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;
+}
+.login-input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(229,0,18,0.12);background:#fff;}
+.login-btn{
+  width:100%;padding:14px;background:var(--red);color:#fff;border:none;border-radius:var(--r);
+  font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;
+  box-shadow:0 4px 16px rgba(229,0,18,0.35);transition:opacity .15s;letter-spacing:.04em;
+}
+.login-btn:hover{opacity:.9;}
+.login-btn:disabled{background:#ccc;box-shadow:none;cursor:not-allowed;}
+.login-err{background:var(--red-light);border:1px solid rgba(229,0,18,0.25);color:var(--red-dark);border-radius:var(--r);padding:10px 14px;font-size:13px;text-align:center;margin-top:12px;display:none;}
+.login-hint{font-size:11px;color:var(--text-hint);text-align:center;margin-top:16px;}
 
-  /* DASHBOARD */
-  .dash-header{margin-bottom:16px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-  .dash-title{font-size:18px;font-weight:700;}
-  .dash-date{font-size:12px;color:var(--text-muted);}
-  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
-  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
-  .kpi-label{font-size:11px;color:var(--text-muted);margin-bottom:5px;font-weight:500;}
-  .kpi-value{font-size:20px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em;}
-  .kpi-sub{font-size:11px;color:var(--text-hint);margin-top:2px;}
-  .kpi-card.hi{background:var(--accent);border-color:var(--accent);}
-  .kpi-card.hi .kpi-label{color:rgba(255,255,255,0.7);}
-  .kpi-card.hi .kpi-value{color:#fff;}
-  .kpi-card.hi .kpi-sub{color:rgba(255,255,255,0.55);}
-  .section-title{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:9px;}
-  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:12px;}
-  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;}
-  .store-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px;}
-  .store-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
-  .store-table th{background:var(--bg);padding:8px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;border-bottom:1px solid var(--border);}
-  .store-table th:first-child,.store-table th:nth-child(2){text-align:left;}
-  .store-table td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--border);color:var(--text);}
-  .store-table td:first-child,.store-table td:nth-child(2){text-align:left;}
-  .store-table td:first-child{font-weight:500;font-size:11px;color:var(--text-muted);}
-  .store-table tr:last-child td{border-bottom:none;}
-  .store-table tr:hover td{background:var(--bg);}
-  .mono{font-family:var(--mono);}
-  .brand-pill{display:inline-block;font-size:9px;padding:1px 6px;border-radius:100px;font-weight:500;margin-left:4px;white-space:nowrap;}
-  .type-pill{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;margin-left:3px;}
-  .bar-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end;}
-  .bar-bg{width:50px;height:3px;background:var(--border);border-radius:2px;}
-  .bar-fill{height:3px;border-radius:2px;background:var(--accent-mid);}
-  .no-data{text-align:center;padding:28px;color:var(--text-hint);font-size:13px;}
-  .filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
-  .filter-btn{padding:5px 12px;border:1px solid var(--border-strong);border-radius:100px;background:var(--surface);font-family:var(--font);font-size:11px;cursor:pointer;color:var(--text-muted);transition:all .15s;white-space:nowrap;}
-  .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-  select.date-filter{padding:5px 10px;border:1px solid var(--border-strong);border-radius:100px;background:var(--surface);font-family:var(--font);font-size:11px;color:var(--text-muted);cursor:pointer;}
-  .loading-overlay{text-align:center;padding:40px;color:var(--text-hint);font-size:13px;}
+/* ── NAV ── */
+#app-screen{display:none;}
+.nav{background:var(--red);padding:0 20px;display:flex;align-items:center;height:52px;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(229,0,18,0.25);}
+.nav-logo svg{height:24px;width:auto;display:block;}
+.nav-div{width:1px;height:18px;background:rgba(255,255,255,0.3);margin:0 14px;}
+.nav-sub{color:rgba(255,255,255,0.8);font-size:12px;letter-spacing:.05em;font-weight:500;margin-right:auto;}
+.nav-user{color:rgba(255,255,255,0.9);font-size:12px;font-weight:500;margin-right:12px;flex-shrink:0;}
+.nav-tabs{display:flex;height:100%;}
+.nav-tab{color:rgba(255,255,255,0.6);padding:0 13px;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:500;height:100%;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;}
+.nav-tab.active{color:#fff;border-bottom-color:#fff;}
+.nav-tab:hover:not(.active){color:rgba(255,255,255,0.9);}
+.logout-btn{font-size:11px;padding:4px 10px;border:1px solid rgba(255,255,255,0.3);border-radius:100px;background:none;color:rgba(255,255,255,0.8);cursor:pointer;flex-shrink:0;}
+.logout-btn:hover{background:rgba(255,255,255,0.1);}
 
-  /* ブランド色 */
-  .b-yakiniku{background:#FEF0E6;color:#8B3A0F;}
-  .b-azuma{background:#E6F0FE;color:#0F3A8B;}
-  .b-udon{background:#E6FEF0;color:#0F6B3A;}
-  .b-soba{background:#F9F0FE;color:#5C0F8B;}
-  .b-chugoku{background:#FEF9E6;color:#8B6A0F;}
-  .b-cafe{background:#FEE6F0;color:#8B0F4A;}
-  .b-tobee{background:#E6FEFE;color:#0F6B6B;}
-  .tp-24h{background:#FEE6E6;color:#8B0F0F;}
-  .tp-vm{background:#E6E6FE;color:#0F0F8B;}
-  .tp-vm24{background:#FEE6FE;color:#6B0F8B;}
+/* ── PAGE ── */
+.page{display:none;padding:20px 18px;max-width:920px;margin:0 auto;}
+.page.active{display:block;}
+.ph{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid var(--red);}
+.ph-title{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.ph-title::before{content:'';display:inline-block;width:4px;height:16px;background:var(--red);border-radius:2px;}
+.ph-sub{font-size:12px;color:var(--text-muted);margin-top:2px;padding-left:12px;}
 
-  @media(max-width:600px){
-    .kpi-grid{grid-template-columns:1fr 1fr;}
-    .grid2{grid-template-columns:1fr;}
-    .sales-grid{grid-template-columns:1fr 1fr;}
-    .form-row.col3,.form-row.col4{grid-template-columns:1fr 1fr;}
-    .page{padding:14px 12px;}
-  }
+/* ── FORM ── */
+.fc{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:20px;margin-bottom:12px;}
+.fst{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--red);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.fst::after{content:'';flex:1;height:1px;background:var(--red-mid);}
+.fr{display:grid;gap:10px;margin-bottom:10px;}
+.fr.c2{grid-template-columns:1fr 1fr;}
+.fr.c3{grid-template-columns:1fr 1fr 1fr;}
+.fr.c4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fl{font-size:11px;font-weight:700;color:var(--text-muted);}
+.fl .rq{color:var(--red);margin-left:2px;}
+input[type="text"],input[type="date"],input[type="number"],input[type="password"],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--r);font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg);-webkit-appearance:none;transition:border-color .15s,box-shadow .15s;}
+input[type="number"]{font-family:var(--mono);}
+input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(229,0,18,0.1);background:#fff;}
+.pfx{position:relative;}
+.pfx-s{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-hint);font-size:13px;pointer-events:none;}
+.pfx input{padding-left:20px;}
+.dv{height:1px;background:var(--border);margin:14px 0;}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.sb{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px;}
+.sb-l{font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:7px;}
+.sr{display:flex;gap:6px;margin-bottom:5px;align-items:center;}
+.sr:last-child{margin-bottom:0;}
+.ss{font-size:10px;color:var(--text-hint);min-width:28px;flex-shrink:0;}
+.btn-red{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;margin-top:8px;box-shadow:0 4px 14px rgba(229,0,18,0.25);}
+.btn-red:hover{opacity:.9;}
+.btn-red:disabled{background:#ccc;box-shadow:none;cursor:not-allowed;}
+.btn-sm{padding:6px 14px;border:1px solid var(--border-strong);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer;color:var(--text-muted);transition:all .15s;}
+.btn-sm:hover{border-color:var(--red);color:var(--red);}
+.btn-sm.red{background:var(--red);border-color:var(--red);color:#fff;}
+.alrt{display:none;border-radius:var(--r);padding:12px 16px;font-size:14px;font-weight:500;text-align:center;margin-top:10px;}
+.al-ok{background:var(--green-light);border:1px solid rgba(26,122,58,0.2);color:var(--green);}
+.al-er{background:var(--red-light);border:1px solid rgba(229,0,18,0.2);color:var(--red-dark);}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── DASHBOARD SHARED ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px;}
+.kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;}
+.kc.hi{background:var(--red);border-color:var(--red);box-shadow:0 4px 14px rgba(229,0,18,0.2);}
+.kl{font-size:11px;color:var(--text-muted);margin-bottom:4px;font-weight:700;}
+.kc.hi .kl{color:rgba(255,255,255,0.75);}
+.kv{font-size:18px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em;}
+.kc.hi .kv{color:#fff;}
+.ks{font-size:11px;color:var(--text-hint);margin-top:2px;}
+.kc.hi .ks{color:rgba(255,255,255,0.6);}
+.sec{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px;}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:12px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px;}
+.tw{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:12px;}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+th{background:var(--bg);padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;border-bottom:1px solid var(--border);}
+th:first-child,th:nth-child(2){text-align:left;}
+td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--border);color:var(--text);}
+td:first-child{text-align:left;font-size:11px;color:var(--text-muted);}
+td:nth-child(2){text-align:left;font-weight:600;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg);}
+.mono{font-family:var(--mono);}
+.bp{display:inline-block;font-size:9px;padding:1px 6px;border-radius:100px;font-weight:700;margin-left:4px;white-space:nowrap;}
+.tp{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:3px;}
+.bc{display:flex;align-items:center;gap:5px;justify-content:flex-end;}
+.bb{width:50px;height:3px;background:var(--border);border-radius:2px;}
+.bf{height:3px;border-radius:2px;background:var(--red);}
+.nd{text-align:center;padding:28px;color:var(--text-hint);font-size:13px;}
+.fbr{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+.fb{padding:5px 12px;border:1px solid var(--border-strong);border-radius:100px;background:var(--surface);font-family:var(--font);font-size:11px;font-weight:500;cursor:pointer;color:var(--text-muted);transition:all .15s;white-space:nowrap;}
+.fb.active{background:var(--red);border-color:var(--red);color:#fff;}
+.fb:hover:not(.active){border-color:var(--red);color:var(--red);}
+select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:100px;background:var(--surface);font-family:var(--font);font-size:11px;color:var(--text-muted);}
+.ld{text-align:center;padding:36px;color:var(--text-hint);font-size:13px;}
+
+/* BRAND COLORS */
+.b-y{background:#FEF0E6;color:#8B3A0F;}
+.b-ya{background:#FEE0E0;color:#6B0000;}
+.b-az{background:#E6F0FE;color:#0F3A8B;}
+.b-u{background:#E6FEF0;color:#0F6B3A;}
+.b-s{background:#F5F0FE;color:#5C0F8B;}
+.b-cn{background:#FEF9E6;color:#8B6A0F;}
+.b-km{background:#FFF0E6;color:#8B4A0F;}
+.b-f{background:#FEE6F0;color:#8B0F4A;}
+.b-t{background:#E6FEFE;color:#0F6B6B;}
+.tp-24{background:#FEE6E6;color:#8B0F0F;}
+.tp-vm{background:#E6E6FE;color:#0F0F8B;}
+.tp-v2{background:#FEE6FE;color:#6B0F8B;}
+
+/* STORE SELECTOR */
+.store-selector{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:20px;margin-bottom:14px;}
+.sel-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.sel-row .fg{flex:1;min-width:160px;}
+
+/* STORE DETAIL */
+.store-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.store-name-big{font-size:22px;font-weight:700;}
+.store-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.sd{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px;}
+.sd-l{font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px;}
+.sd-v{font-size:17px;font-weight:700;font-family:var(--mono);}
+.sd-s{font-size:11px;color:var(--text-hint);margin-top:2px;}
+.period-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.pt{padding:5px 14px;border:1px solid var(--border-strong);border-radius:100px;background:var(--surface);font-family:var(--font);font-size:11px;font-weight:500;cursor:pointer;color:var(--text-muted);transition:all .15s;}
+.pt.active{background:var(--red);border-color:var(--red);color:#fff;}
+
+/* STAFF */
+.staff-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:20px;margin-bottom:14px;}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px;}
+.staff-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;}
+.staff-photo{width:68px;height:68px;border-radius:50%;object-fit:cover;margin:0 auto 9px;display:block;border:2px solid var(--surface);}
+.staff-photo-placeholder{width:68px;height:68px;border-radius:50%;background:var(--red-mid);border:2px solid var(--surface);margin:0 auto 9px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--red);font-weight:700;}
+.staff-name{font-size:13px;font-weight:700;margin-bottom:2px;}
+.staff-kana{font-size:10px;color:var(--text-hint);margin-bottom:5px;}
+.staff-role{display:inline-block;font-size:10px;padding:2px 8px;border-radius:100px;font-weight:700;background:var(--red-mid);color:var(--red);margin-bottom:6px;}
+.staff-meta{font-size:10px;color:var(--text-muted);line-height:1.8;}
+.upload-label{display:block;margin-top:8px;font-size:10px;padding:4px 0;border:1px solid var(--border-strong);border-radius:4px;background:var(--surface);cursor:pointer;color:var(--text-muted);transition:all .15s;}
+.upload-label:hover{border-color:var(--red);color:var(--red);}
+
+/* STORE ONLY VIEW */
+.store-only-header{background:linear-gradient(135deg,var(--red) 0%,var(--red-dark) 100%);border-radius:var(--rlg);padding:20px 24px;margin-bottom:16px;color:#fff;}
+.store-only-name{font-size:22px;font-weight:700;margin-bottom:4px;}
+.store-only-brand{font-size:13px;opacity:.8;}
+
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .g2{grid-template-columns:1fr;}
+  .sg{grid-template-columns:1fr 1fr;}
+  .fr.c3,.fr.c4{grid-template-columns:1fr 1fr;}
+  .store-detail-grid{grid-template-columns:1fr 1fr;}
+  .staff-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+  .page{padding:14px 12px;}
+  .nav-sub{display:none;}
+  .sel-row{flex-direction:column;}
+}
 </style>
 </head>
 <body>
 
-<nav class="nav">
-  <div class="nav-brand">WEST</div>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('form',this)">売上入力</button>
-    <button class="nav-tab" onclick="showPage('dashboard',this)">ダッシュボード</button>
+<!-- ══ ログイン画面 ══ -->
+<div id="login-screen">
+  <div class="login-logo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 47.48" aria-label="WEST">
+      <path fill="rgba(255,255,255,0.15)" d="M138.64,9.49C117.48,3.09,96.78-.2,75,0h0C53.22-.2,32.52,3.09,11.36,9.49c-14.84,4.49-15.45,22.73,0,27.81,21.15,6.95,41.86,10.43,63.64,10.17,21.77.26,42.49-3.21,63.64-10.17,15.45-5.08,14.84-23.32,0-27.81Z"/>
+      <path fill="#fff" d="M32.34,14.89l-.03-2.39c-.02-2.44,4.85-2.66,4.89-.05,0,.78.03,2.32.03,2.32l8.21-.08c1.88.14,2.87,2.27,2.85,4.01-.33,13.6-8.66,17.19-15.34,18.24-3.87.6-4.84-4.61-1.41-5.21,8.32-1.45,11.07-5.2,11.04-11.44,0-.05-.11-.42-.17-.42l-16.58.22-.11.17c0,1.08.06,4.78.06,4.78.03,2.83-5.07,2.88-5.09.06-.04-2.75-.09-5.64-.09-7.94,0-1.24.86-2.13,2.28-2.15l9.46-.12Z"/>
+      <path fill="#fff" d="M52.09,35.79c-3.75.05-3.48-5.07-.06-5.22l9.24-.09-.12-11.63s-6.09.07-8.43.08c-3.31.04-3.16-5.23-.17-5.26,2.24-.03,19.4-.21,21.85-.23,3.48-.04,3.74,5.23.12,5.27-2.17.02-7.39.08-7.39.08l.11,11.62,8.1-.09c3.96-.04,4.09,5.29.05,5.22l-23.31.24Z"/>
+      <path fill="#fff" d="M98.2,30.2c-3.59,3.29-8.42,5.21-13.85,5.26-3.31.04-4.05-5.11-.21-5.37,7.18-.5,13.75-5.89,14.2-11.19l-.24-.27s-11.89.23-14.83.15c-2.95-.07-3.32-5.22-.05-5.25l18.04-.19c2.19-.1,3.23.82,3.25,3.1.02,1.74-.1,1.52-.1,1.52-.37,2.85-1.27,5.46-2.58,7.72,3.25,1.48,5.09,3.01,6.35,4.84,2.02,2.96-2.19,5.7-4.02,3.72,0,0-4.51-4.25-5.95-4.06Z"/>
+      <path fill="#fff" d="M134.88,23.48c-5.18-2.92-10.31-4.28-17.42-4.26-.03-2.57-.05-4.75-.05-5.88-.04-3.81-5.1-3.75-5.06.05,0,0,.18,17.91.2,20.37.04,2.88,5.1,3.06,5.07-.21-.02-1.45-.05-4.93-.1-8.65,4.25-.54,13.07,2.33,14.75,3.26,3.37,1.87,5.5-3.05,2.61-4.69Z"/>
+    </svg>
   </div>
-  <div class="nav-status status-loading" id="nav-status">接続中...</div>
-</nav>
-
-<!-- ══ 入力フォーム ══ -->
-<div class="page active" id="page-form">
-  <div class="form-card">
-    <div class="form-section-title">基本情報</div>
-    <div class="form-row col3">
-      <div class="form-group"><label class="form-label">日付 <span class="req">*</span></label><input type="date" id="f-date"></div>
-      <div class="form-group"><label class="form-label">店舗番号</label><input type="text" id="f-storeno" placeholder="例：28"></div>
-      <div class="form-group"><label class="form-label">報告者名 <span class="req">*</span></label><input type="text" id="f-reporter" placeholder="例：加戸 優"></div>
+  <div class="login-card">
+    <div class="login-title">売上報告システム</div>
+    <div class="login-sub">店舗名とパスワードを入力してください</div>
+    <div class="login-field">
+      <label class="login-label">店舗名</label>
+      <input type="text" class="login-input" id="login-store" placeholder="例：麦野、管理者" autocomplete="off">
     </div>
-    <div class="form-row col3">
-      <div class="form-group"><label class="form-label">業態 <span class="req">*</span></label>
-        <select id="f-brand" onchange="updateStoreType()">
-          <option value="">選択してください</option>
-          <option value="焼肉">焼肉</option>
-          <option value="焼肉AZUMA">焼肉AZUMA</option>
-          <option value="あずま">あずま（蕎麦）</option>
-          <option value="うどん">うどん</option>
-          <option value="生そば">生そば</option>
-          <option value="中国/小明">中国/小明</option>
-          <option value="カフェ">カフェ</option>
-          <option value="東兵衛">東兵衛</option>
-        </select>
-      </div>
-      <div class="form-group" id="store-type-wrap" style="display:none"><label class="form-label">区分</label>
-        <select id="f-store-type">
-          <option value="通常">通常</option>
-          <option value="券売機">券売機</option>
-          <option value="24H">24H</option>
-          <option value="券売機24H">券売機24H</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">店舗名 <span class="req">*</span></label><input type="text" id="f-store" placeholder="例：麦野、新宮、平尾"></div>
+    <div class="login-field">
+      <label class="login-label">パスワード</label>
+      <input type="password" class="login-input" id="login-pw" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">ログイン</button>
+    <div class="login-err" id="login-err">店舗名またはパスワードが違います</div>
+    <div class="login-hint">※ パスワードがわからない場合は本部にお問い合わせください</div>
   </div>
-
-  <div class="form-card">
-    <div class="form-section-title">売上実績</div>
-    <div class="sales-grid">
-      <div class="s-box"><div class="s-box-label">実績合計</div>
-        <div class="s-row"><span class="s-sub">売上</span><div class="pfx" style="flex:1"><span class="pfx-sym">¥</span><input type="number" id="f-total" placeholder="0" min="0"></div></div>
-        <div class="s-row"><span class="s-sub">客数</span><input type="number" id="f-total-guests" placeholder="0" min="0" style="flex:1"></div>
-      </div>
-      <div class="s-box"><div class="s-box-label">昼</div>
-        <div class="s-row"><span class="s-sub">売上</span><div class="pfx" style="flex:1"><span class="pfx-sym">¥</span><input type="number" id="f-lunch" placeholder="0" min="0"></div></div>
-        <div class="s-row"><span class="s-sub">客数</span><input type="number" id="f-lunch-guests" placeholder="0" min="0" style="flex:1"></div>
-      </div>
-      <div class="s-box"><div class="s-box-label">夜</div>
-        <div class="s-row"><span class="s-sub">売上</span><div class="pfx" style="flex:1"><span class="pfx-sym">¥</span><input type="number" id="f-dinner" placeholder="0" min="0"></div></div>
-        <div class="s-row"><span class="s-sub">客数</span><input type="number" id="f-dinner-guests" placeholder="0" min="0" style="flex:1"></div>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div class="form-section-title">デリバリー・特別売上</div>
-    <div class="form-row col4">
-      <div class="s-box"><div class="s-box-label">TO</div>
-        <div class="s-row"><span class="s-sub">売上</span><div class="pfx" style="flex:1"><span class="pfx-sym">¥</span><input type="number" id="f-to" placeholder="0" min="0"></div></div>
-        <div class="s-row"><span class="s-sub">件数</span><input type="number" id="f-to-count" placeholder="0" min="0" style="flex:1"></div>
-      </div>
-      <div class="s-box"><div class="s-box-label">Uber Eats</div>
-        <div class="s-row"><span class="s-sub">売上</span><div class="pfx" style="flex:1"><span class="pfx-sym">¥</span><input type="number" id="f-uber" placeholder="0" min="0"></div></div>
-        <div class="s-row"><span class="s-sub">件数</span><input type="number" id="f-uber-count" placeholder="0" min="0" style="flex:1"></div>
-      </div>
-      <div class="s-box" style="grid-column:span 2"><div class="s-box-label">特別売上（任意）</div>
-        <div class="s-row"><span class="s-sub">内容</span><input type="text" id="f-special-note" placeholder="ケータリング、宴会など" style="flex:1"></div>
-        <div class="s-row"><span class="s-sub">金額</span><div class="pfx" style="flex:1"><span class="pfx-sym">¥</span><input type="number" id="f-special" placeholder="0" min="0"></div></div>
-      </div>
-    </div>
-  </div>
-
-  <button class="btn-submit" id="submit-btn" onclick="submitForm()">報告を送信する</button>
-  <div class="alert alert-success" id="alert-success">✓ 報告が送信されました。お疲れ様です！</div>
-  <div class="alert alert-error" id="alert-error">送信に失敗しました。もう一度お試しください。</div>
 </div>
 
-<!-- ══ ダッシュボード ══ -->
-<div class="page" id="page-dashboard">
-  <div class="dash-header">
-    <div><div class="dash-title">売上ダッシュボード</div><div class="dash-date" id="dash-date-label"></div></div>
-    <select class="date-filter" id="date-filter" onchange="loadDashboard()"></select>
+<!-- ══ アプリ本体 ══ -->
+<div id="app-screen">
+  <nav class="nav">
+    <div class="nav-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 47.48" aria-label="WEST">
+        <path fill="rgba(255,255,255,0.15)" d="M138.64,9.49C117.48,3.09,96.78-.2,75,0h0C53.22-.2,32.52,3.09,11.36,9.49c-14.84,4.49-15.45,22.73,0,27.81,21.15,6.95,41.86,10.43,63.64,10.17,21.77.26,42.49-3.21,63.64-10.17,15.45-5.08,14.84-23.32,0-27.81Z"/>
+        <path fill="#fff" d="M32.34,14.89l-.03-2.39c-.02-2.44,4.85-2.66,4.89-.05,0,.78.03,2.32.03,2.32l8.21-.08c1.88.14,2.87,2.27,2.85,4.01-.33,13.6-8.66,17.19-15.34,18.24-3.87.6-4.84-4.61-1.41-5.21,8.32-1.45,11.07-5.2,11.04-11.44,0-.05-.11-.42-.17-.42l-16.58.22-.11.17c0,1.08.06,4.78.06,4.78.03,2.83-5.07,2.88-5.09.06-.04-2.75-.09-5.64-.09-7.94,0-1.24.86-2.13,2.28-2.15l9.46-.12Z"/>
+        <path fill="#fff" d="M52.09,35.79c-3.75.05-3.48-5.07-.06-5.22l9.24-.09-.12-11.63s-6.09.07-8.43.08c-3.31.04-3.16-5.23-.17-5.26,2.24-.03,19.4-.21,21.85-.23,3.48-.04,3.74,5.23.12,5.27-2.17.02-7.39.08-7.39.08l.11,11.62,8.1-.09c3.96-.04,4.09,5.29.05,5.22l-23.31.24Z"/>
+        <path fill="#fff" d="M98.2,30.2c-3.59,3.29-8.42,5.21-13.85,5.26-3.31.04-4.05-5.11-.21-5.37,7.18-.5,13.75-5.89,14.2-11.19l-.24-.27s-11.89.23-14.83.15c-2.95-.07-3.32-5.22-.05-5.25l18.04-.19c2.19-.1,3.23.82,3.25,3.1.02,1.74-.1,1.52-.1,1.52-.37,2.85-1.27,5.46-2.58,7.72,3.25,1.48,5.09,3.01,6.35,4.84,2.02,2.96-2.19,5.7-4.02,3.72,0,0-4.51-4.25-5.95-4.06Z"/>
+        <path fill="#fff" d="M134.88,23.48c-5.18-2.92-10.31-4.28-17.42-4.26-.03-2.57-.05-4.75-.05-5.88-.04-3.81-5.1-3.75-5.06.05,0,0,.18,17.91.2,20.37.04,2.88,5.1,3.06,5.07-.21-.02-1.45-.05-4.93-.1-8.65,4.25-.54,13.07,2.33,14.75,3.26,3.37,1.87,5.5-3.05,2.61-4.69Z"/>
+      </svg>
+    </div>
+    <div class="nav-div"></div>
+    <div class="nav-sub">売上報告システム</div>
+    <div class="nav-tabs" id="nav-tabs"></div>
+    <div class="nav-user" id="nav-user"></div>
+    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+  </nav>
+
+  <!-- 売上入力 -->
+  <div class="page" id="page-form">
+    <div class="ph"><div class="ph-title">売上報告入力</div><div class="ph-sub" id="form-sub">必須項目を入力して送信してください</div></div>
+    <div class="fc">
+      <div class="fst">基本情報</div>
+      <div class="fr c3">
+        <div class="fg"><label class="fl">日付 <span class="rq">*</span></label><input type="date" id="f-date"></div>
+        <div class="fg"><label class="fl">店舗番号</label><input type="text" id="f-no" placeholder="例：28"></div>
+        <div class="fg"><label class="fl">報告者名 <span class="rq">*</span></label><input type="text" id="f-rep" placeholder="例：加戸 優"></div>
+      </div>
+      <div class="fr c3">
+        <div class="fg"><label class="fl">業態 <span class="rq">*</span></label>
+          <select id="f-brand" onchange="onBrandChange()">
+            <option value="">選択してください</option>
+            <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
+            <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
+            <option value="生そば">生そば</option><option value="中国">中国</option>
+            <option value="小明">小明</option><option value="カフェ">カフェ</option>
+            <option value="東兵衛">東兵衛</option>
+          </select>
+        </div>
+        <div class="fg" id="type-wrap" style="display:none"><label class="fl">区分</label>
+          <select id="f-type"><option value="通常">通常</option><option value="券売機">券売機</option><option value="24H">24H</option><option value="券売機24H">券売機24H</option></select>
+        </div>
+        <div class="fg"><label class="fl">店舗名 <span class="rq">*</span></label><input type="text" id="f-store" placeholder="例：麦野、新宮、平尾"></div>
+      </div>
+    </div>
+    <div class="fc">
+      <div class="fst">売上実績</div>
+      <div class="sg">
+        <div class="sb"><div class="sb-l">実績合計</div>
+          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-total" placeholder="0" min="0"></div></div>
+          <div class="sr"><span class="ss">客数</span><input type="number" id="f-tg" placeholder="0" min="0" style="flex:1"></div>
+        </div>
+        <div class="sb"><div class="sb-l">昼</div>
+          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-lunch" placeholder="0" min="0"></div></div>
+          <div class="sr"><span class="ss">客数</span><input type="number" id="f-lg" placeholder="0" min="0" style="flex:1"></div>
+        </div>
+        <div class="sb"><div class="sb-l">夜</div>
+          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-dinner" placeholder="0" min="0"></div></div>
+          <div class="sr"><span class="ss">客数</span><input type="number" id="f-dg" placeholder="0" min="0" style="flex:1"></div>
+        </div>
+      </div>
+      <div class="dv"></div>
+      <div class="fst">デリバリー・特別売上</div>
+      <div class="fr c4">
+        <div class="sb"><div class="sb-l">TO</div>
+          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-to" placeholder="0" min="0"></div></div>
+          <div class="sr"><span class="ss">件数</span><input type="number" id="f-tc" placeholder="0" min="0" style="flex:1"></div>
+        </div>
+        <div class="sb"><div class="sb-l">Uber Eats</div>
+          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-uber" placeholder="0" min="0"></div></div>
+          <div class="sr"><span class="ss">件数</span><input type="number" id="f-uc" placeholder="0" min="0" style="flex:1"></div>
+        </div>
+        <div class="sb" style="grid-column:span 2"><div class="sb-l">特別売上（任意）</div>
+          <div class="sr"><span class="ss">内容</span><input type="text" id="f-sn" placeholder="ケータリング、宴会など" style="flex:1"></div>
+          <div class="sr"><span class="ss">金額</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-sp" placeholder="0" min="0"></div></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-red" id="sub-btn" onclick="doSubmit()">報告を送信する</button>
+    <div class="alrt al-ok" id="al-ok">✓ 報告が送信されました。お疲れ様です！</div>
+    <div class="alrt al-er" id="al-er">送信に失敗しました。もう一度お試しください。</div>
   </div>
-  <div class="filter-row" id="brand-filters">
-    <button class="filter-btn active" onclick="setFilter('all',this)">全業態</button>
-    <button class="filter-btn" onclick="setFilter('焼肉',this)">焼肉</button>
-    <button class="filter-btn" onclick="setFilter('焼肉AZUMA',this)">焼肉AZUMA</button>
-    <button class="filter-btn" onclick="setFilter('あずま',this)">あずま</button>
-    <button class="filter-btn" onclick="setFilter('うどん',this)">うどん</button>
-    <button class="filter-btn" onclick="setFilter('生そば',this)">生そば</button>
-    <button class="filter-btn" onclick="setFilter('中国/小明',this)">中国/小明</button>
-    <button class="filter-btn" onclick="setFilter('カフェ',this)">カフェ</button>
-    <button class="filter-btn" onclick="setFilter('東兵衛',this)">東兵衛</button>
-    <button class="filter-btn" onclick="loadDashboard()" style="margin-left:auto">↻ 更新</button>
+
+  <!-- 自店舗ダッシュボード（店舗ログイン時） -->
+  <div class="page" id="page-mystore">
+    <div id="mystore-content"><div class="ld">読み込み中...</div></div>
   </div>
-  <div id="dashboard-content"><div class="loading-overlay">データを読み込み中...</div></div>
+
+  <!-- 全体（管理者のみ） -->
+  <div class="page" id="page-overall">
+    <div class="ph"><div class="ph-title">全体ダッシュボード</div><div class="ph-sub" id="ov-label"></div></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <div class="fbr" style="margin-bottom:0;flex:1;flex-wrap:wrap;">
+        <button class="fb active" onclick="ovFilter('all',this)">全業態</button>
+        <button class="fb" onclick="ovFilter('焼肉',this)">焼肉</button>
+        <button class="fb" onclick="ovFilter('焼肉AZUMA',this)">焼肉AZUMA</button>
+        <button class="fb" onclick="ovFilter('あずま',this)">あずま</button>
+        <button class="fb" onclick="ovFilter('うどん',this)">うどん</button>
+        <button class="fb" onclick="ovFilter('生そば',this)">生そば</button>
+        <button class="fb" onclick="ovFilter('中国',this)">中国</button>
+        <button class="fb" onclick="ovFilter('小明',this)">小明</button>
+        <button class="fb" onclick="ovFilter('カフェ',this)">カフェ</button>
+        <button class="fb" onclick="ovFilter('東兵衛',this)">東兵衛</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <select class="df" id="ov-date" onchange="loadAll()"></select>
+        <button class="fb" onclick="loadAll()">↻</button>
+      </div>
+    </div>
+    <div id="ov-content"><div class="ld">読み込み中...</div></div>
+  </div>
+
+  <!-- 部門別（管理者のみ） -->
+  <div class="page" id="page-division">
+    <div class="ph"><div class="ph-title">部門別集計</div><div class="ph-sub" id="dv-label"></div></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+      <select class="df" id="dv-date" onchange="loadDivision()"></select>
+      <button class="fb" onclick="loadDivision()">↻ 更新</button>
+    </div>
+    <div id="dv-content"><div class="ld">読み込み中...</div></div>
+  </div>
+
+  <!-- 店舗別（管理者のみ） -->
+  <div class="page" id="page-store">
+    <div class="ph"><div class="ph-title">店舗別詳細</div><div class="ph-sub">部門を選んでから店舗を選択してください</div></div>
+    <div class="store-selector">
+      <div class="sel-row">
+        <div class="fg"><label class="fl">部門（業態）</label>
+          <select id="st-brand" onchange="onStBrandChange()">
+            <option value="">-- 部門を選択 --</option>
+            <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
+            <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
+            <option value="生そば">生そば</option><option value="中国">中国</option>
+            <option value="小明">小明</option><option value="カフェ">カフェ</option>
+            <option value="東兵衛">東兵衛</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">店舗</label>
+          <select id="st-store" disabled><option value="">-- まず部門を選択 --</option></select>
+        </div>
+        <div style="padding-bottom:2px;"><button class="btn-sm red" onclick="onStoreSelect()">表示</button></div>
+      </div>
+    </div>
+    <div id="store-result"><div class="ld" style="padding:20px;color:var(--text-hint);font-size:13px;text-align:center;">部門と店舗を選択してください</div></div>
+  </div>
+
+  <!-- スタッフ管理（管理者のみ） -->
+  <div class="page" id="page-staff-mgmt">
+    <div class="ph"><div class="ph-title">スタッフ管理</div><div class="ph-sub">店舗スタッフの情報・写真を管理します</div></div>
+    <div class="store-selector" style="margin-bottom:14px;">
+      <div class="sel-row">
+        <div class="fg"><label class="fl">部門（業態）</label>
+          <select id="sm-brand" onchange="onSmBrandChange()">
+            <option value="">-- 部門を選択 --</option>
+            <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
+            <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
+            <option value="生そば">生そば</option><option value="中国">中国</option>
+            <option value="小明">小明</option><option value="カフェ">カフェ</option>
+            <option value="東兵衛">東兵衛</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">店舗</label>
+          <select id="sm-store" onchange="loadStaffMgmt()" disabled><option value="">-- まず部門を選択 --</option></select>
+        </div>
+      </div>
+    </div>
+    <div id="staff-mgmt-content"></div>
+  </div>
 </div>
 
 <script>
-const SUPABASE_URL = 'https://zlzmchwghzejyacjwtyq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_oPCMdP1RTlWzjBvDHIBZnw_1BSH_gdy';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SB_URL='https://zlzmchwghzejyacjwtyq.supabase.co';
+const SB_KEY='sb_publishable_oPCMdP1RTlWzjBvDHIBZnw_1BSH_gdy';
+const sb=supabase.createClient(SB_URL,SB_KEY);
 
-let allRecords = [];
-let brandFilter = 'all';
-let chartTime = null, chartBrand = null;
+let currentUser=null; // {store_name, brand, is_admin, store_no}
+let allData=[],allStaff=[],ovBrand='all';
+let chartOvTime=null,chartOvBrand=null,chartDvBar=null,chartStDaily=null,chartStTime=null,chartMyDaily=null,chartMyTime=null;
+let storePeriod='30',brandStoreMap={};
 
-const BRAND_COLORS = {
-  '焼肉':'b-yakiniku','焼肉AZUMA':'b-yakiniku','あずま':'b-azuma',
-  'うどん':'b-udon','生そば':'b-soba','中国/小明':'b-chugoku',
-  'カフェ':'b-cafe','東兵衛':'b-tobee'
-};
-const BRAND_CHART_COLORS = {
-  '焼肉':'#D85A30','焼肉AZUMA':'#BA4010','あずま':'#378ADD',
-  'うどん':'#1D9E75','生そば':'#7F77DD','中国/小明':'#BA7517',
-  'カフェ':'#D4537E','東兵衛':'#0F8B8B'
-};
-const TYPE_CLASS = {'券売機':'tp-vm','24H':'tp-24h','券売機24H':'tp-vm24'};
+const BC={'焼肉':'b-y','焼肉AZUMA':'b-ya','あずま':'b-az','うどん':'b-u','生そば':'b-s','中国':'b-cn','小明':'b-km','カフェ':'b-f','東兵衛':'b-t'};
+const BCLR={'焼肉':'#e50012','焼肉AZUMA':'#b8000e','あずま':'#378ADD','うどん':'#1D9E75','生そば':'#7F77DD','中国':'#BA7517','小明':'#D4537E','カフェ':'#D4537E','東兵衛':'#0F8B8B'};
+const TC={'券売機':'tp-vm','24H':'tp-24','券売機24H':'tp-v2'};
 
-async function checkConnection() {
-  try {
-    const {error} = await sb.from('sales_reports').select('id').limit(1);
-    const el = document.getElementById('nav-status');
-    if(error){el.textContent='接続エラー';el.className='nav-status status-err';}
-    else{el.textContent='● 接続済み';el.className='nav-status status-ok';}
-  } catch(e){
-    const el=document.getElementById('nav-status');
-    el.textContent='接続エラー';el.className='nav-status status-err';
+// ── ログイン ──
+async function doLogin(){
+  const store=document.getElementById('login-store').value.trim();
+  const pw=document.getElementById('login-pw').value;
+  if(!store||!pw){showLoginErr('店舗名とパスワードを入力してください');return;}
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>確認中...';
+  const{data,error}=await sb.from('store_auth').select('*').ilike('store_name',store).limit(1);
+  btn.disabled=false;btn.textContent='ログイン';
+  if(error||!data||data.length===0){showLoginErr('店舗名またはパスワードが違います');return;}
+  const rec=data[0];
+  if(rec.password!==pw){showLoginErr('店舗名またはパスワードが違います');return;}
+  currentUser=rec;
+  sessionStorage.setItem('west_user',JSON.stringify(rec));
+  startApp();
+}
+
+function showLoginErr(msg){
+  const el=document.getElementById('login-err');
+  el.textContent=msg;el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+}
+
+function doLogout(){
+  sessionStorage.removeItem('west_user');
+  currentUser=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-pw').value='';
+  allData=[];allStaff=[];
+}
+
+async function startApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  document.getElementById('nav-user').textContent=currentUser.store_name;
+  buildNav();
+  await loadStaffData();
+  if(currentUser.is_admin){
+    showPage('overall',document.querySelector('.nav-tab'));
+  } else {
+    showPage('form',document.querySelector('.nav-tab'));
+    prefillStoreForm();
   }
+}
+
+function buildNav(){
+  const tabs=document.getElementById('nav-tabs');
+  tabs.innerHTML='';
+  const adminTabs=[
+    {id:'form',label:'売上入力'},
+    {id:'overall',label:'全体'},
+    {id:'division',label:'部門別'},
+    {id:'store',label:'店舗別'},
+    {id:'staff-mgmt',label:'スタッフ'},
+  ];
+  const storeTabs=[
+    {id:'form',label:'売上入力'},
+    {id:'mystore',label:'自店舗'},
+  ];
+  const list=currentUser.is_admin?adminTabs:storeTabs;
+  list.forEach((t,i)=>{
+    const btn=document.createElement('button');
+    btn.className='nav-tab'+(i===0?' active':'');
+    btn.textContent=t.label;
+    btn.onclick=()=>showPage(t.id,btn);
+    tabs.appendChild(btn);
+  });
+}
+
+function prefillStoreForm(){
+  // 店舗ログイン時、業態と店舗を自動入力
+  const brandSel=document.getElementById('f-brand');
+  brandSel.value=currentUser.brand||'';
+  document.getElementById('f-store').value=currentUser.store_name;
+  document.getElementById('f-no').value=currentUser.store_no||'';
+  brandSel.disabled=true;
+  document.getElementById('f-store').readOnly=true;
+  document.getElementById('f-no').readOnly=true;
+  onBrandChange();
 }
 
 function showPage(name,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  btn.classList.add('active');
-  if(name==='dashboard') loadDashboard();
+  if(btn) btn.classList.add('active');
+  if(name==='overall') loadAll();
+  else if(name==='division') loadDivision();
+  else if(name==='mystore') loadMyStore();
 }
 
-function updateStoreType(){
-  const brand = document.getElementById('f-brand').value;
-  const wrap = document.getElementById('store-type-wrap');
-  wrap.style.display = (brand==='うどん'||brand==='あずま') ? 'flex' : 'none';
+function onBrandChange(){
+  const b=document.getElementById('f-brand').value;
+  document.getElementById('type-wrap').style.display=(b==='うどん'||b==='あずま')?'flex':'none';
 }
 
-function setFilter(brand,btn){
-  brandFilter=brand;
-  document.querySelectorAll('.filter-btn').forEach(b=>{
-    if(!b.getAttribute('onclick').includes('loadDashboard')) b.classList.remove('active');
+// ── スタッフデータ ──
+async function loadStaffData(){
+  const{data}=await sb.from('staff').select('*').order('name');
+  allStaff=data||[];
+  brandStoreMap={};
+  allStaff.forEach(s=>{
+    if(!s.brand||!s.store) return;
+    if(!brandStoreMap[s.brand]) brandStoreMap[s.brand]=new Set();
+    brandStoreMap[s.brand].add(s.store);
   });
-  btn.classList.add('active');
-  renderDashboard();
 }
 
-async function submitForm(){
+// ── FORM SUBMIT ──
+async function doSubmit(){
   const date=document.getElementById('f-date').value;
-  const reporter=document.getElementById('f-reporter').value.trim();
+  const rep=document.getElementById('f-rep').value.trim();
   const brand=document.getElementById('f-brand').value;
   const store=document.getElementById('f-store').value.trim();
   const total=parseInt(document.getElementById('f-total').value)||0;
-  if(!date||!reporter||!brand||!store||!total){alert('日付・報告者・業態・店舗名・実績売上は必須です');return;}
-
-  const btn=document.getElementById('submit-btn');
-  btn.disabled=true;
-  btn.innerHTML='<span class="spinner"></span>送信中...';
-
-  const lunchV=parseInt(document.getElementById('f-lunch').value)||0;
-  const lunchG=parseInt(document.getElementById('f-lunch-guests').value)||0;
-  const dinnerV=parseInt(document.getElementById('f-dinner').value)||0;
-  const dinnerG=parseInt(document.getElementById('f-dinner-guests').value)||0;
-  const storeTypeWrap=document.getElementById('store-type-wrap');
-  const storeType=storeTypeWrap.style.display!=='none'?document.getElementById('f-store-type').value:'通常';
-
-  const {error}=await sb.from('sales_reports').insert({
-    report_date:date, reporter, brand,
-    store_no:document.getElementById('f-storeno').value.trim(),
-    store_type:storeType, store,
-    total_sales:total,
-    total_guests:parseInt(document.getElementById('f-total-guests').value)||0,
-    lunch_sales:lunchV, lunch_guests:lunchG,
-    dinner_sales:dinnerV, dinner_guests:dinnerG,
-    lunch_unit:parseInt(document.getElementById('f-lunch-unit')||0)||(lunchG?Math.round(lunchV/lunchG):0),
-    dinner_unit:parseInt(document.getElementById('f-dinner-unit')||0)||(dinnerG?Math.round(dinnerV/dinnerG):0),
-    to_sales:parseInt(document.getElementById('f-to').value)||0,
-    to_count:parseInt(document.getElementById('f-to-count').value)||0,
-    uber_sales:parseInt(document.getElementById('f-uber').value)||0,
-    uber_count:parseInt(document.getElementById('f-uber-count').value)||0,
-    special_sales:parseInt(document.getElementById('f-special').value)||0,
-    special_note:document.getElementById('f-special-note').value.trim(),
+  if(!date||!rep||!brand||!store||!total){alert('日付・報告者・業態・店舗名・実績売上は必須です');return;}
+  const btn=document.getElementById('sub-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>送信中...';
+  const lV=parseInt(document.getElementById('f-lunch').value)||0;
+  const lG=parseInt(document.getElementById('f-lg').value)||0;
+  const dV=parseInt(document.getElementById('f-dinner').value)||0;
+  const dG=parseInt(document.getElementById('f-dg').value)||0;
+  const tw=document.getElementById('type-wrap');
+  const stype=tw.style.display!=='none'?document.getElementById('f-type').value:'通常';
+  const{error}=await sb.from('sales_reports').insert({
+    report_date:date,reporter:rep,brand,
+    store_no:document.getElementById('f-no').value.trim(),
+    store_type:stype,store,
+    total_sales:total,total_guests:parseInt(document.getElementById('f-tg').value)||0,
+    lunch_sales:lV,lunch_guests:lG,dinner_sales:dV,dinner_guests:dG,
+    lunch_unit:lG?Math.round(lV/lG):0,dinner_unit:dG?Math.round(dV/dG):0,
+    to_sales:parseInt(document.getElementById('f-to').value)||0,to_count:parseInt(document.getElementById('f-tc').value)||0,
+    uber_sales:parseInt(document.getElementById('f-uber').value)||0,uber_count:parseInt(document.getElementById('f-uc').value)||0,
+    special_sales:parseInt(document.getElementById('f-sp').value)||0,
+    special_note:document.getElementById('f-sn').value.trim(),
   });
-
-  btn.disabled=false;
-  btn.textContent='報告を送信する';
-
-  if(error){showAlert('alert-error');console.error(error);}
+  btn.disabled=false;btn.textContent='報告を送信する';
+  if(error){showAl('al-er');console.error(error);}
   else{
-    showAlert('alert-success');
-    ['f-storeno','f-reporter','f-store','f-total','f-total-guests','f-lunch','f-lunch-guests',
-     'f-dinner','f-dinner-guests','f-to','f-to-count','f-uber','f-uber-count','f-special','f-special-note']
-      .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-    document.getElementById('f-brand').value='';
-    document.getElementById('store-type-wrap').style.display='none';
+    showAl('al-ok');
+    ['f-rep','f-total','f-tg','f-lunch','f-lg','f-dinner','f-dg','f-to','f-tc','f-uber','f-uc','f-sp','f-sn'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    allData=[];
   }
 }
+function showAl(id){['al-ok','al-er'].forEach(i=>document.getElementById(i).style.display='none');const el=document.getElementById(id);el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
 
-function showAlert(id){
-  ['alert-success','alert-error'].forEach(i=>document.getElementById(i).style.display='none');
-  const el=document.getElementById(id);
-  el.style.display='block';
-  setTimeout(()=>el.style.display='none',4000);
-}
-
-async function loadDashboard(){
-  document.getElementById('dashboard-content').innerHTML='<div class="loading-overlay">データを読み込み中...</div>';
-  const sel=document.getElementById('date-filter');
-  const dateVal=sel.value;
-
-  let query=sb.from('sales_reports').select('*').order('report_date',{ascending:false});
-  if(dateVal&&dateVal!=='all') query=query.eq('report_date',dateVal);
-
-  const {data,error}=await query;
-  if(error){document.getElementById('dashboard-content').innerHTML='<div class="no-data">データの読み込みに失敗しました</div>';return;}
-  allRecords=data||[];
-
-  const dates=[...new Set(allRecords.map(r=>r.report_date))].sort().reverse();
+// ── 共通 ──
+function buildDateSel(sel,data,current){
+  const dates=[...new Set(data.map(r=>r.report_date))].sort().reverse();
   const today=new Date().toISOString().split('T')[0];
-  const current=sel.value||today;
   sel.innerHTML='<option value="all">全期間</option>';
-  dates.forEach(d=>{
-    const [y,m,dy]=d.split('-');
-    const opt=document.createElement('option');
-    opt.value=d;
-    opt.textContent=`${y}年${parseInt(m)}月${parseInt(dy)}日${d===today?' (今日)':''}`;
-    sel.appendChild(opt);
-  });
-  if([...sel.options].find(o=>o.value===current)) sel.value=current;
+  dates.forEach(d=>{const[y,m,dy]=d.split('-');const o=document.createElement('option');o.value=d;o.textContent=`${y}年${parseInt(m)}月${parseInt(dy)}日${d===today?' (今日)':''}`;sel.appendChild(o);});
+  const c=current||today;
+  if([...sel.options].find(o=>o.value===c)) sel.value=c;
+}
+function fmtA(v){return v?'¥'+v.toLocaleString():'—';}
+function fmtN(v){return v?v.toLocaleString()+'名':'—';}
+function fmtD(d){if(!d)return'—';const[y,m,dy]=d.split('-');return`${y}年${parseInt(m)}月${parseInt(dy)}日`;}
 
-  renderDashboard();
+async function ensureData(){
+  if(allData.length) return;
+  const{data}=await sb.from('sales_reports').select('*').order('report_date',{ascending:true});
+  allData=data||[];
 }
 
-function renderDashboard(){
-  const dateVal=document.getElementById('date-filter').value;
-  let data=allRecords;
-  if(dateVal&&dateVal!=='all') data=data.filter(r=>r.report_date===dateVal);
-  if(brandFilter!=='all') data=data.filter(r=>r.brand===brandFilter);
+// ── 自店舗ビュー（店舗ログイン時） ──
+async function loadMyStore(){
+  document.getElementById('mystore-content').innerHTML='<div class="ld">読み込み中...</div>';
+  await ensureData();
+  const name=currentUser.store_name;
+  const brand=currentUser.brand;
+  const color=BCLR[brand]||'#e50012';
+  const bc=BC[brand]||'b-u';
+  let data=allData.filter(r=>r.store===name).sort((a,b)=>a.report_date.localeCompare(b.report_date));
+  const storeStaff=allStaff.filter(s=>s.store===name);
 
-  const today=new Date().toISOString().split('T')[0];
-  const label=dateVal==='all'?`全期間（${[...new Set(allRecords.map(r=>r.report_date))].length}日分）`:
-    (()=>{const[y,m,d]=dateVal.split('-');return `${y}年${parseInt(m)}月${parseInt(d)}日`;})();
-  document.getElementById('dash-date-label').textContent=label;
+  if(data.length===0){
+    document.getElementById('mystore-content').innerHTML=`
+      <div class="store-only-header"><div class="store-only-name">${name}</div><div class="store-only-brand">${brand}</div></div>
+      <div class="nd">まだ売上データがありません。「売上入力」タブから報告してください。</div>`;
+    return;
+  }
 
-  const grandTotal=data.reduce((s,r)=>s+r.total_sales,0);
-  const grandGuests=data.reduce((s,r)=>s+r.total_guests,0);
-  const grandDelivery=data.reduce((s,r)=>s+r.to_sales+r.uber_sales,0);
-  const storeCount=[...new Set(data.map(r=>r.store))].length;
+  const totalSales=data.reduce((s,r)=>s+r.total_sales,0);
+  const totalGuests=data.reduce((s,r)=>s+r.total_guests,0);
+  const avgSales=Math.round(totalSales/data.length);
+  const avgUnit=totalGuests?Math.round(totalSales/totalGuests):0;
+  const lunchTotal=data.reduce((s,r)=>s+r.lunch_sales,0);
+  const dinnerTotal=data.reduce((s,r)=>s+r.dinner_sales,0);
+  const lunchRate=totalSales?Math.round(lunchTotal/totalSales*100):0;
+  const latest=data[data.length-1];
 
-  document.getElementById('dashboard-content').innerHTML=`
+  const staffHtml=storeStaff.length>0?
+    `<div class="staff-grid">${storeStaff.map(s=>staffCard(s,false)).join('')}</div>`:
+    `<div class="nd" style="padding:16px">スタッフ情報は管理者が登録します</div>`;
+
+  document.getElementById('mystore-content').innerHTML=`
+    <div class="store-only-header">
+      <div class="store-only-name">${name} <span class="bp ${bc}" style="font-size:13px;padding:3px 10px;vertical-align:middle">${brand}</span></div>
+      <div class="store-only-brand">売上ダッシュボード（全期間）</div>
+    </div>
     <div class="kpi-grid">
-      <div class="kpi-card hi"><div class="kpi-label">全店合計売上</div><div class="kpi-value">${grandTotal?'¥'+grandTotal.toLocaleString():'—'}</div><div class="kpi-sub">${storeCount}店舗分</div></div>
-      <div class="kpi-card"><div class="kpi-label">総客数</div><div class="kpi-value">${grandGuests?grandGuests.toLocaleString()+'名':'—'}</div><div class="kpi-sub">全店合計</div></div>
-      <div class="kpi-card"><div class="kpi-label">平均客単価</div><div class="kpi-value">${grandGuests?'¥'+Math.round(grandTotal/grandGuests).toLocaleString():'—'}</div><div class="kpi-sub">全店平均</div></div>
-      <div class="kpi-card"><div class="kpi-label">TO + Uber</div><div class="kpi-value">${grandDelivery?'¥'+grandDelivery.toLocaleString():'—'}</div><div class="kpi-sub">デリバリー合計</div></div>
+      <div class="kc hi"><div class="kl">累計売上</div><div class="kv">${fmtA(totalSales)}</div><div class="ks">${data.length}日分</div></div>
+      <div class="kc"><div class="kl">日平均売上</div><div class="kv">${fmtA(avgSales)}</div><div class="ks">1日あたり</div></div>
+      <div class="kc"><div class="kl">平均客単価</div><div class="kv">${avgUnit?fmtA(avgUnit):'—'}</div><div class="ks">期間平均</div></div>
+      <div class="kc"><div class="kl">昼:夜 比率</div><div class="kv">${lunchRate}:${100-lunchRate}</div><div class="ks">最終 ${latest.report_date}</div></div>
     </div>
-    <div class="grid2">
-      <div class="chart-card"><div class="section-title">業態別売上</div><div style="position:relative;height:190px"><canvas id="chart-brand"></canvas></div></div>
-      <div class="chart-card"><div class="section-title">昼・夜 売上内訳</div><div style="position:relative;height:190px"><canvas id="chart-time"></canvas></div></div>
+    <div class="g2">
+      <div class="cc"><div class="sec">日別売上推移</div><div style="position:relative;height:200px"><canvas id="c-my-daily"></canvas></div></div>
+      <div class="cc"><div class="sec">昼・夜比較</div><div style="position:relative;height:200px"><canvas id="c-my-time"></canvas></div></div>
     </div>
-    <div class="store-table-wrap">
-      <div class="section-title" style="padding:12px 14px 0">店舗別売上一覧</div>
-      <table class="store-table">
-        <thead><tr>
-          <th style="width:6%">No.</th>
-          <th style="width:24%">店舗</th>
-          <th style="width:16%">売上</th>
-          <th style="width:10%">客数</th>
-          <th style="width:10%">単価</th>
-          <th style="width:10%">TO</th>
-          <th style="width:10%">Uber</th>
-          <th style="width:14%">割合</th>
-        </tr></thead>
-        <tbody id="store-tbody"></tbody>
-      </table>
+    <div class="tw"><div class="sec" style="padding:12px 14px 0">日別詳細（直近10日）</div>
+      <table style="font-size:11px"><thead><tr><th style="width:14%">日付</th><th style="width:18%">売上</th><th style="width:10%">客数</th><th style="width:11%">単価</th><th style="width:16%">昼</th><th style="width:16%">夜</th><th style="width:15%">TO+Uber</th></tr></thead>
+      <tbody>${[...data].reverse().slice(0,10).map(r=>{const unit=r.total_guests?Math.round(r.total_sales/r.total_guests):0;return`<tr><td>${r.report_date}</td><td class="mono" style="font-weight:700">${fmtA(r.total_sales)}</td><td class="mono">${r.total_guests}</td><td class="mono">${unit?fmtA(unit):'—'}</td><td class="mono">${fmtA(r.lunch_sales)}</td><td class="mono">${fmtA(r.dinner_sales)}</td><td class="mono">${r.to_sales+r.uber_sales?fmtA(r.to_sales+r.uber_sales):'—'}</td></tr>`;}).join('')}</tbody></table>
+    </div>
+    <div class="staff-section">
+      <div class="sec">在籍スタッフ（${storeStaff.length}名）</div>
+      ${staffHtml}
     </div>`;
 
-  // 店舗テーブル
-  const storeMap={};
-  data.forEach(r=>{
-    const key=r.store;
-    if(!storeMap[key]) storeMap[key]={no:r.store_no,brand:r.brand,type:r.store_type,total:0,guests:0,to:0,uber:0,lunch:0,dinner:0};
-    const s=storeMap[key];
-    s.total+=r.total_sales;s.guests+=r.total_guests;s.to+=r.to_sales;s.uber+=r.uber_sales;s.lunch+=r.lunch_sales;s.dinner+=r.dinner_sales;
-  });
-  const sorted=Object.entries(storeMap).sort((a,b)=>b[1].total-a[1].total);
+  if(chartMyDaily)chartMyDaily.destroy();
+  if(chartMyTime)chartMyTime.destroy();
+  const labels=data.slice(-30).map(r=>r.report_date.slice(5));
+  const recent=data.slice(-30);
+  chartMyDaily=new Chart(document.getElementById('c-my-daily'),{type:'line',data:{labels,datasets:[{label:'日別売上',data:recent.map(r=>r.total_sales),borderColor:color,backgroundColor:color+'22',borderWidth:2,fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:color}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},color:'#a09d97',maxRotation:45,autoSkip:true,maxTicksLimit:10}},y:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:9},color:'#a09d97'},grid:{color:'rgba(0,0,0,0.04)'}}}}});
+  chartMyTime=new Chart(document.getElementById('c-my-time'),{type:'bar',data:{labels,datasets:[{label:'昼',data:recent.map(r=>r.lunch_sales),backgroundColor:color+'66',borderWidth:0},{label:'夜',data:recent.map(r=>r.dinner_sales),backgroundColor:color,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:5}}},scales:{x:{stacked:true,ticks:{font:{size:9},color:'#a09d97',maxRotation:45,autoSkip:true,maxTicksLimit:10}},y:{stacked:true,ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:9},color:'#a09d97'},grid:{color:'rgba(0,0,0,0.04)'}}}}});
+}
+
+// ── 全体ダッシュボード ──
+async function loadAll(){
+  document.getElementById('ov-content').innerHTML='<div class="ld">読み込み中...</div>';
+  await ensureData();
+  const sel=document.getElementById('ov-date');
+  buildDateSel(sel,allData,sel.value);
+  renderOverall();
+}
+function ovFilter(brand,btn){
+  ovBrand=brand;
+  document.querySelectorAll('#page-overall .fb').forEach(b=>{if(!b.getAttribute('onclick').includes('loadAll'))b.classList.remove('active');});
+  btn.classList.add('active');renderOverall();
+}
+function renderOverall(){
+  const dateVal=document.getElementById('ov-date').value;
+  let data=allData;
+  if(dateVal&&dateVal!=='all') data=data.filter(r=>r.report_date===dateVal);
+  if(ovBrand!=='all') data=data.filter(r=>r.brand===ovBrand);
+  const label=dateVal==='all'?`全期間（${[...new Set(allData.map(r=>r.report_date))].length}日分）`:(()=>{const[y,m,d]=dateVal.split('-');return`${y}年${parseInt(m)}月${parseInt(d)}日`;})();
+  document.getElementById('ov-label').textContent=label;
+  const gT=data.reduce((s,r)=>s+r.total_sales,0);
+  const gG=data.reduce((s,r)=>s+r.total_guests,0);
+  const gD=data.reduce((s,r)=>s+r.to_sales+r.uber_sales,0);
+  const sCnt=[...new Set(data.map(r=>r.store))].length;
+  document.getElementById('ov-content').innerHTML=`
+    <div class="kpi-grid">
+      <div class="kc hi"><div class="kl">全店合計売上</div><div class="kv">${fmtA(gT)}</div><div class="ks">${sCnt}店舗分</div></div>
+      <div class="kc"><div class="kl">総客数</div><div class="kv">${fmtN(gG)}</div><div class="ks">全店合計</div></div>
+      <div class="kc"><div class="kl">平均客単価</div><div class="kv">${gG?fmtA(Math.round(gT/gG)):'—'}</div><div class="ks">全店平均</div></div>
+      <div class="kc"><div class="kl">TO + Uber</div><div class="kv">${fmtA(gD)}</div><div class="ks">デリバリー合計</div></div>
+    </div>
+    <div class="g2">
+      <div class="cc"><div class="sec">業態別売上</div><div style="position:relative;height:190px"><canvas id="c-ov-brand"></canvas></div></div>
+      <div class="cc"><div class="sec">昼・夜（上位8店舗）</div><div style="position:relative;height:190px"><canvas id="c-ov-time"></canvas></div></div>
+    </div>
+    <div class="tw"><div class="sec" style="padding:12px 14px 0">店舗別売上一覧</div>
+      <table><thead><tr><th style="width:6%">No.</th><th style="width:24%">店舗</th><th style="width:15%">売上</th><th style="width:10%">客数</th><th style="width:10%">単価</th><th style="width:10%">TO</th><th style="width:10%">Uber</th><th style="width:15%">割合</th></tr></thead><tbody id="ov-tbody"></tbody></table>
+    </div>`;
+  const sm={};
+  data.forEach(r=>{if(!sm[r.store])sm[r.store]={no:r.store_no,brand:r.brand,type:r.store_type,total:0,guests:0,to:0,uber:0,lunch:0,dinner:0};const s=sm[r.store];s.total+=r.total_sales;s.guests+=r.total_guests;s.to+=r.to_sales;s.uber+=r.uber_sales;s.lunch+=r.lunch_sales;s.dinner+=r.dinner_sales;});
+  const sorted=Object.entries(sm).sort((a,b)=>b[1].total-a[1].total);
   const maxT=sorted.length?sorted[0][1].total:1;
-  const tbody=document.getElementById('store-tbody');
-  tbody.innerHTML=sorted.length===0?'<tr><td colspan="8" class="no-data">データがありません</td></tr>':
-    sorted.map(([name,s])=>{
-      const pct=grandTotal?Math.round(s.total/grandTotal*100):0;
-      const unit=s.guests?Math.round(s.total/s.guests):0;
-      const barW=Math.round(s.total/maxT*100);
-      const bc=BRAND_COLORS[s.brand]||'b-udon';
-      const tc=s.type&&s.type!=='通常'?`<span class="type-pill ${TYPE_CLASS[s.type]||''}">${s.type}</span>`:'';
-      return `<tr>
-        <td>${s.no||'—'}</td>
-        <td>${name}<span class="brand-pill ${bc}">${s.brand}</span>${tc}</td>
-        <td class="mono">¥${s.total.toLocaleString()}</td>
-        <td class="mono">${s.guests.toLocaleString()}</td>
-        <td class="mono">${unit?'¥'+unit.toLocaleString():'—'}</td>
-        <td class="mono">${s.to?'¥'+s.to.toLocaleString():'—'}</td>
-        <td class="mono">${s.uber?'¥'+s.uber.toLocaleString():'—'}</td>
-        <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div><span style="font-size:10px;color:var(--text-hint);min-width:24px">${pct}%</span></div></td>
-      </tr>`;
-    }).join('');
-
-  // グラフ
-  if(chartTime) chartTime.destroy();
-  if(chartBrand) chartBrand.destroy();
-
-  // 業態別ドーナツ
-  const brandTotals={};
-  data.forEach(r=>{brandTotals[r.brand]=(brandTotals[r.brand]||0)+r.total_sales;});
-  const bLabels=Object.keys(brandTotals).filter(k=>brandTotals[k]>0);
-  if(bLabels.length>0){
-    chartBrand=new Chart(document.getElementById('chart-brand'),{
-      type:'doughnut',
-      data:{labels:bLabels,datasets:[{data:bLabels.map(k=>brandTotals[k]),backgroundColor:bLabels.map(k=>BRAND_CHART_COLORS[k]||'#888'),borderWidth:2,borderColor:'#fff'}]},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:6}},
-        tooltip:{callbacks:{label:ctx=>' ¥'+ctx.parsed.toLocaleString()}}}}
-    });
-  }
-
-  // 昼夜棒グラフ（上位8店舗）
+  document.getElementById('ov-tbody').innerHTML=sorted.length===0?'<tr><td colspan="8" class="nd">データがありません</td></tr>':
+    sorted.map(([name,s])=>{const pct=gT?Math.round(s.total/gT*100):0;const unit=s.guests?Math.round(s.total/s.guests):0;const bw=Math.round(s.total/maxT*100);const bc=BC[s.brand]||'b-u';const tc=s.type&&s.type!=='通常'?`<span class="tp ${TC[s.type]||''}">${s.type}</span>`:'';
+    return`<tr><td>${s.no||'—'}</td><td>${name}<span class="bp ${bc}">${s.brand}</span>${tc}</td><td class="mono">${fmtA(s.total)}</td><td class="mono">${s.guests.toLocaleString()}</td><td class="mono">${unit?fmtA(unit):'—'}</td><td class="mono">${s.to?fmtA(s.to):'—'}</td><td class="mono">${s.uber?fmtA(s.uber):'—'}</td><td><div class="bc"><div class="bb"><div class="bf" style="width:${bw}%"></div></div><span style="font-size:10px;color:var(--text-hint);min-width:24px">${pct}%</span></div></td></tr>`;}).join('');
+  if(chartOvBrand)chartOvBrand.destroy();if(chartOvTime)chartOvTime.destroy();
+  const bt={};data.forEach(r=>{bt[r.brand]=(bt[r.brand]||0)+r.total_sales;});
+  const bl=Object.keys(bt).filter(k=>bt[k]>0);
+  if(bl.length>0){chartOvBrand=new Chart(document.getElementById('c-ov-brand'),{type:'doughnut',data:{labels:bl,datasets:[{data:bl.map(k=>bt[k]),backgroundColor:bl.map(k=>BCLR[k]||'#888'),borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:5}},tooltip:{callbacks:{label:ctx=>' ¥'+ctx.parsed.toLocaleString()}}}}});}
   const top8=sorted.slice(0,8);
-  if(top8.length>0){
-    chartTime=new Chart(document.getElementById('chart-time'),{
-      type:'bar',
-      data:{labels:top8.map(([n])=>n),datasets:[
-        {label:'昼',data:top8.map(([,s])=>s.lunch),backgroundColor:'#9FE1CB',borderWidth:0},
-        {label:'夜',data:top8.map(([,s])=>s.dinner),backgroundColor:'#1D9E75',borderWidth:0},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:6}}},
-        scales:{
-          x:{stacked:true,ticks:{font:{size:9},color:'#9c9a92',maxRotation:35}},
-          y:{stacked:true,ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:9},color:'#9c9a92'},grid:{color:'rgba(0,0,0,0.04)'}}
-        }
-      }
-    });
+  if(top8.length>0){chartOvTime=new Chart(document.getElementById('c-ov-time'),{type:'bar',data:{labels:top8.map(([n])=>n),datasets:[{label:'昼',data:top8.map(([,s])=>s.lunch),backgroundColor:'#FFAAAA',borderWidth:0},{label:'夜',data:top8.map(([,s])=>s.dinner),backgroundColor:'#e50012',borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:5}}},scales:{x:{stacked:true,ticks:{font:{size:9},color:'#a09d97',maxRotation:35}},y:{stacked:true,ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:9},color:'#a09d97'},grid:{color:'rgba(0,0,0,0.04)'}}}}});}
+}
+
+// ── 部門別 ──
+async function loadDivision(){
+  document.getElementById('dv-content').innerHTML='<div class="ld">読み込み中...</div>';
+  await ensureData();
+  const sel=document.getElementById('dv-date');buildDateSel(sel,allData,sel.value);
+  const dateVal=sel.value;
+  let data=allData;
+  if(dateVal&&dateVal!=='all') data=data.filter(r=>r.report_date===dateVal);
+  const label=dateVal==='all'?`全期間（${[...new Set(allData.map(r=>r.report_date))].length}日分）`:(()=>{const[y,m,d]=dateVal.split('-');return`${y}年${parseInt(m)}月${parseInt(d)}日`;})();
+  document.getElementById('dv-label').textContent=label;
+  const brands=['焼肉','焼肉AZUMA','あずま','うどん','生そば','中国','小明','カフェ','東兵衛'];
+  const bm={};brands.forEach(b=>{bm[b]={total:0,guests:0,lunch:0,dinner:0,to:0,uber:0,stores:new Set()};});
+  data.forEach(r=>{if(!bm[r.brand])return;const b=bm[r.brand];b.total+=r.total_sales;b.guests+=r.total_guests;b.lunch+=r.lunch_sales;b.dinner+=r.dinner_sales;b.to+=r.to_sales;b.uber+=r.uber_sales;b.stores.add(r.store);});
+  const gTotal=data.reduce((s,r)=>s+r.total_sales,0);
+  const activeBrands=brands.filter(b=>bm[b].total>0).sort((a,b)=>bm[b].total-bm[a].total);
+  let html=`<div class="g2" style="margin-bottom:14px;"><div class="cc"><div class="sec">部門別売上構成</div><div style="position:relative;height:220px"><canvas id="c-dv-pie"></canvas></div></div><div class="cc"><div class="sec">部門別昼・夜比較</div><div style="position:relative;height:220px"><canvas id="c-dv-bar"></canvas></div></div></div>
+    <div class="tw"><div class="sec" style="padding:12px 14px 0">部門別集計一覧</div>
+    <table><thead><tr><th style="width:14%">業態</th><th style="width:17%">合計売上</th><th style="width:9%">店舗数</th><th style="width:11%">総客数</th><th style="width:10%">客単価</th><th style="width:12%">昼売上</th><th style="width:12%">夜売上</th><th style="width:7%">構成比</th></tr></thead><tbody>`;
+  activeBrands.forEach(brand=>{const b=bm[brand];const pct=gTotal?Math.round(b.total/gTotal*100):0;const unit=b.guests?Math.round(b.total/b.guests):0;const bc=BC[brand]||'b-u';
+    html+=`<tr><td><span class="bp ${bc}" style="font-size:11px;padding:2px 8px">${brand}</span></td><td class="mono" style="font-weight:700">${fmtA(b.total)}</td><td class="mono">${b.stores.size}</td><td class="mono">${b.guests.toLocaleString()}</td><td class="mono">${unit?fmtA(unit):'—'}</td><td class="mono">${fmtA(b.lunch)}</td><td class="mono">${fmtA(b.dinner)}</td><td><span style="font-size:12px;font-weight:700;color:var(--red)">${pct}%</span></td></tr>`;});
+  html+='</tbody></table></div>';
+  document.getElementById('dv-content').innerHTML=html;
+  if(chartDvBar)chartDvBar.destroy();
+  if(activeBrands.length>0){
+    new Chart(document.getElementById('c-dv-pie'),{type:'doughnut',data:{labels:activeBrands,datasets:[{data:activeBrands.map(b=>bm[b].total),backgroundColor:activeBrands.map(b=>BCLR[b]||'#888'),borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:5}},tooltip:{callbacks:{label:ctx=>' ¥'+ctx.parsed.toLocaleString()}}}}});
+    chartDvBar=new Chart(document.getElementById('c-dv-bar'),{type:'bar',data:{labels:activeBrands,datasets:[{label:'昼',data:activeBrands.map(b=>bm[b].lunch),backgroundColor:activeBrands.map(b=>BCLR[b]+'88'),borderWidth:0},{label:'夜',data:activeBrands.map(b=>bm[b].dinner),backgroundColor:activeBrands.map(b=>BCLR[b]),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:5}}},scales:{x:{stacked:true,ticks:{font:{size:10},color:'#a09d97'}},y:{stacked:true,ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:9},color:'#a09d97'},grid:{color:'rgba(0,0,0,0.04)'}}}}});
   }
 }
 
+// ── 店舗別 ──
+function onStBrandChange(){
+  const brand=document.getElementById('st-brand').value;
+  const sel=document.getElementById('st-store');
+  sel.innerHTML='<option value="">-- 店舗を選択 --</option>';
+  if(!brand){sel.disabled=true;return;}
+  const fromSales=[...new Set(allData.filter(r=>r.brand===brand).map(r=>r.store))];
+  const fromStaff=brandStoreMap[brand]?[...brandStoreMap[brand]]:[];
+  const all=[...new Set([...fromSales,...fromStaff])].sort();
+  all.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  sel.disabled=false;
+  document.getElementById('store-result').innerHTML='<div class="ld" style="padding:20px;color:var(--text-hint);font-size:13px;text-align:center;">店舗を選択してください</div>';
+}
+
+async function onStoreSelect(){
+  const store=document.getElementById('st-store').value;
+  const brand=document.getElementById('st-brand').value;
+  if(!store) return;
+  storePeriod='30';
+  await ensureData();
+  await renderStore(store,brand);
+}
+
+async function renderStore(name,brand){
+  document.getElementById('store-result').innerHTML='<div class="ld">読み込み中...</div>';
+  let data=allData.filter(r=>r.store===name).sort((a,b)=>a.report_date.localeCompare(b.report_date));
+  if(storePeriod!=='all'){const cutoff=new Date();cutoff.setDate(cutoff.getDate()-parseInt(storePeriod));data=data.filter(r=>r.report_date>=cutoff.toISOString().split('T')[0]);}
+  const storeStaff=allStaff.filter(s=>s.store===name);
+  const info=allData.find(r=>r.store===name)||{brand};
+  const bc=BC[info.brand||brand]||'b-u';
+  const tc=info.store_type&&info.store_type!=='通常'?`<span class="tp ${TC[info.store_type]||''}">${info.store_type}</span>`:'';
+  const color=BCLR[info.brand||brand]||'#e50012';
+
+  let salesHtml='';
+  if(data.length>0){
+    const totalSales=data.reduce((s,r)=>s+r.total_sales,0);
+    const totalGuests=data.reduce((s,r)=>s+r.total_guests,0);
+    const avgSales=Math.round(totalSales/data.length);
+    const avgUnit=totalGuests?Math.round(totalSales/totalGuests):0;
+    const lunchTotal=data.reduce((s,r)=>s+r.lunch_sales,0);
+    const dinnerTotal=data.reduce((s,r)=>s+r.dinner_sales,0);
+    const lunchRate=totalSales?Math.round(lunchTotal/totalSales*100):0;
+    const mid=Math.floor(data.length/2);
+    const fAvg=data.slice(0,mid).reduce((s,r)=>s+r.total_sales,0)/(mid||1);
+    const lAvg=data.slice(mid).reduce((s,r)=>s+r.total_sales,0)/((data.length-mid)||1);
+    const trend=fAvg?Math.round((lAvg-fAvg)/fAvg*100):0;
+    const tH=trend>0?`<span style="color:var(--green);font-weight:700">↑ ${trend}%</span>`:trend<0?`<span style="color:var(--red);font-weight:700">↓ ${Math.abs(trend)}%</span>`:`<span style="color:var(--text-hint)">± 0%</span>`;
+    const latest=data[data.length-1];
+    salesHtml=`
+      <div class="period-tabs">
+        <button class="pt ${storePeriod==='7'?'active':''}" onclick="storePeriod='7';renderStore('${name}','${brand}')">7日間</button>
+        <button class="pt ${storePeriod==='30'?'active':''}" onclick="storePeriod='30';renderStore('${name}','${brand}')">30日間</button>
+        <button class="pt ${storePeriod==='90'?'active':''}" onclick="storePeriod='90';renderStore('${name}','${brand}')">90日間</button>
+        <button class="pt ${storePeriod==='all'?'active':''}" onclick="storePeriod='all';renderStore('${name}','${brand}')">全期間</button>
+      </div>
+      <div class="store-detail-grid">
+        <div class="sd"><div class="sd-l">累計売上</div><div class="sd-v">${fmtA(totalSales)}</div><div class="sd-s">${data.length}日分</div></div>
+        <div class="sd"><div class="sd-l">日平均売上</div><div class="sd-v">${fmtA(avgSales)}</div><div class="sd-s">1日あたり</div></div>
+        <div class="sd"><div class="sd-l">平均客単価</div><div class="sd-v">${avgUnit?fmtA(avgUnit):'—'}</div><div class="sd-s">期間平均</div></div>
+        <div class="sd"><div class="sd-l">昼売上比率</div><div class="sd-v">${lunchRate}%</div><div class="sd-s">夜 ${100-lunchRate}%</div></div>
+        <div class="sd"><div class="sd-l">直近トレンド</div><div class="sd-v">${tH}</div><div class="sd-s">前半→後半比較</div></div>
+        <div class="sd"><div class="sd-l">最終報告</div><div class="sd-v" style="font-size:13px">${latest.report_date}</div><div class="sd-s">${fmtA(latest.total_sales)}</div></div>
+      </div>
+      <div class="g2">
+        <div class="cc"><div class="sec">日別売上推移</div><div style="position:relative;height:190px"><canvas id="c-st-daily"></canvas></div></div>
+        <div class="cc"><div class="sec">昼・夜比較</div><div style="position:relative;height:190px"><canvas id="c-st-time"></canvas></div></div>
+      </div>
+      <div class="tw"><div class="sec" style="padding:12px 14px 0">日別詳細</div>
+        <table style="font-size:11px"><thead><tr><th style="width:14%">日付</th><th style="width:17%">売上</th><th style="width:10%">客数</th><th style="width:11%">単価</th><th style="width:16%">昼</th><th style="width:16%">夜</th><th style="width:16%">TO+Uber</th></tr></thead>
+        <tbody>${[...data].reverse().map(r=>{const unit=r.total_guests?Math.round(r.total_sales/r.total_guests):0;return`<tr><td>${r.report_date}</td><td class="mono" style="font-weight:700">${fmtA(r.total_sales)}</td><td class="mono">${r.total_guests}</td><td class="mono">${unit?fmtA(unit):'—'}</td><td class="mono">${fmtA(r.lunch_sales)}</td><td class="mono">${fmtA(r.dinner_sales)}</td><td class="mono">${r.to_sales+r.uber_sales?fmtA(r.to_sales+r.uber_sales):'—'}</td></tr>`;}).join('')}</tbody></table>
+      </div>`;
+  } else {
+    salesHtml=`<div class="period-tabs">
+      <button class="pt ${storePeriod==='7'?'active':''}" onclick="storePeriod='7';renderStore('${name}','${brand}')">7日間</button>
+      <button class="pt ${storePeriod==='30'?'active':''}" onclick="storePeriod='30';renderStore('${name}','${brand}')">30日間</button>
+      <button class="pt ${storePeriod==='90'?'active':''}" onclick="storePeriod='90';renderStore('${name}','${brand}')">90日間</button>
+      <button class="pt ${storePeriod==='all'?'active':''}" onclick="storePeriod='all';renderStore('${name}','${brand}')">全期間</button>
+    </div><div class="nd">この期間の売上データがありません</div>`;
+  }
+
+  const staffHtml=storeStaff.length===0?
+    `<div class="nd">スタッフ情報はまだ登録されていません</div>`:
+    `<div class="staff-grid">${storeStaff.map(s=>staffCard(s,false)).join('')}</div>`;
+
+  document.getElementById('store-result').innerHTML=`
+    <div class="cc" style="margin-bottom:12px;">
+      <div class="store-header">
+        <div class="store-name-big">${name}</div>
+        <span class="bp ${bc}" style="font-size:12px;padding:2px 10px">${info.brand||brand}</span>${tc}
+        ${info.store_no?`<span style="font-size:12px;color:var(--text-hint)">No.${info.store_no}</span>`:''}
+      </div>
+      ${salesHtml}
+    </div>
+    <div class="staff-section">
+      <div class="sec">在籍スタッフ（${storeStaff.length}名）</div>
+      ${staffHtml}
+    </div>`;
+
+  if(data.length>0){
+    if(chartStDaily)chartStDaily.destroy();if(chartStTime)chartStTime.destroy();
+    const labels=data.map(r=>r.report_date.slice(5));
+    chartStDaily=new Chart(document.getElementById('c-st-daily'),{type:'line',data:{labels,datasets:[{label:'日別売上',data:data.map(r=>r.total_sales),borderColor:color,backgroundColor:color+'22',borderWidth:2,fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:color}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},color:'#a09d97',maxRotation:45,autoSkip:true,maxTicksLimit:10}},y:{ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:9},color:'#a09d97'},grid:{color:'rgba(0,0,0,0.04)'}}}}});
+    chartStTime=new Chart(document.getElementById('c-st-time'),{type:'bar',data:{labels,datasets:[{label:'昼',data:data.map(r=>r.lunch_sales),backgroundColor:color+'66',borderWidth:0},{label:'夜',data:data.map(r=>r.dinner_sales),backgroundColor:color,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,boxHeight:10,padding:5}}},scales:{x:{stacked:true,ticks:{font:{size:9},color:'#a09d97',maxRotation:45,autoSkip:true,maxTicksLimit:10}},y:{stacked:true,ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:9},color:'#a09d97'},grid:{color:'rgba(0,0,0,0.04)'}}}}});
+  }
+}
+
+// ── スタッフ管理 ──
+function onSmBrandChange(){
+  const brand=document.getElementById('sm-brand').value;
+  const sel=document.getElementById('sm-store');
+  sel.innerHTML='<option value="">-- 店舗を選択 --</option>';
+  if(!brand){sel.disabled=true;return;}
+  const stores=brandStoreMap[brand]?[...brandStoreMap[brand]].sort():[];
+  stores.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  sel.disabled=false;
+  document.getElementById('staff-mgmt-content').innerHTML='';
+}
+
+async function loadStaffMgmt(){
+  const store=document.getElementById('sm-store').value;
+  if(!store){document.getElementById('staff-mgmt-content').innerHTML='';return;}
+  document.getElementById('staff-mgmt-content').innerHTML='<div class="ld">読み込み中...</div>';
+  const storeStaff=allStaff.filter(s=>s.store===store);
+  if(storeStaff.length===0){
+    document.getElementById('staff-mgmt-content').innerHTML=`<div class="cc"><div class="nd">この店舗のスタッフ情報はまだ登録されていません</div></div>`;
+    return;
+  }
+  document.getElementById('staff-mgmt-content').innerHTML=`
+    <div class="staff-section">
+      <div class="sec" style="margin-bottom:14px;">在籍スタッフ（${storeStaff.length}名）— 写真をアップロードできます</div>
+      <div class="staff-grid">${storeStaff.map(s=>staffCard(s,true)).join('')}</div>
+    </div>`;
+}
+
+// ── スタッフカード ──
+function staffCard(s,editable){
+  const ini=s.name?s.name.charAt(0):'?';
+  const photoHtml=s.photo_url?
+    `<img class="staff-photo" src="${s.photo_url}" alt="${s.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="staff-photo-placeholder" style="display:none">${ini}</div>`:
+    `<div class="staff-photo-placeholder">${ini}</div>`;
+  const uploadHtml=editable?`<label class="upload-label">📷 写真をアップロード<input type="file" style="display:none" accept="image/*" onchange="uploadPhoto('${s.id}',this)"></label>`:'';
+  return`<div class="staff-card" id="sc-${s.id}">
+    ${photoHtml}
+    <div class="staff-name">${s.name}</div>
+    <div class="staff-kana">${s.name_kana||''}</div>
+    <div class="staff-role">${s.role||'—'}</div>
+    <div class="staff-meta">🎂 ${fmtD(s.birthday)}<br>📅 入社 ${fmtD(s.joined_at)}</div>
+    ${uploadHtml}
+  </div>`;
+}
+
+async function uploadPhoto(staffId,input){
+  const file=input.files[0];if(!file)return;
+  const ext=file.name.split('.').pop();
+  const path=`${staffId}.${ext}`;
+  const{error:upErr}=await sb.storage.from('staff-photos').upload(path,file,{upsert:true});
+  if(upErr){alert('アップロードに失敗しました: '+upErr.message);return;}
+  const{data:urlData}=sb.storage.from('staff-photos').getPublicUrl(path);
+  const photoUrl=urlData.publicUrl+'?t='+Date.now();
+  await sb.from('staff').update({photo_url:photoUrl}).eq('id',staffId);
+  const idx=allStaff.findIndex(s=>s.id===staffId);
+  if(idx>=0) allStaff[idx].photo_url=photoUrl;
+  const card=document.getElementById('sc-'+staffId);
+  if(card&&allStaff[idx]) card.outerHTML=staffCard(allStaff[idx],true);
+}
+
+// ── 初期化 ──
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
-checkConnection();
+// セッション復元
+const saved=sessionStorage.getItem('west_user');
+if(saved){
+  try{currentUser=JSON.parse(saved);startApp();}
+  catch(e){sessionStorage.removeItem('west_user');}
+}
 </script>
 </body>
 </html>
