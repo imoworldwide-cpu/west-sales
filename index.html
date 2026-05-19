@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ウエスト 売上報告</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#f7f6f2;--surface:#ffffff;--border:rgba(0,0,0,0.08);--border-strong:rgba(0,0,0,0.15);
+    --text:#1a1a18;--text-muted:#6b6b66;--text-hint:#9c9a92;
+    --accent:#1a3a2a;--accent-light:#e8f0eb;--accent-mid:#2d6b47;
+    --red:#c0392b;--red-light:#fdf0ee;--amber:#b8651a;--amber-light:#fef5e7;
+    --blue:#1a4a7a;--blue-light:#eaf1fb;
+    --font:'Noto Sans JP',sans-serif;--mono:'DM Mono',monospace;
+    --radius:10px;--radius-lg:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+  .nav{background:var(--accent);padding:0 20px;display:flex;align-items:center;height:52px;position:sticky;top:0;z-index:100;}
+  .nav-brand{color:#fff;font-weight:700;font-size:15px;letter-spacing:.03em;margin-right:24px;flex-shrink:0;}
+  .nav-tabs{display:flex;height:100%;}
+  .nav-tab{color:rgba(255,255,255,0.6);padding:0 16px;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:13px;height:100%;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+  .nav-tab.active{color:#fff;border-bottom-color:#6fcf97;}
+  .nav-tab:hover:not(.active){color:rgba(255,255,255,0.85);}
+  .nav-status{margin-left:auto;font-size:11px;padding:3px 10px;border-radius:100px;}
+  .status-ok{background:rgba(111,207,151,0.2);color:#6fcf97;}
+  .status-err{background:rgba(192,57,43,0.2);color:#ff7675;}
+  .status-loading{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);}
+  .page{display:none;padding:24px 20px;max-width:780px;margin:0 auto;}
+  .page.active{display:block;}
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;}
+  .form-section-title{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-hint);text-transform:uppercase;margin-bottom:14px;}
+  .form-row{display:grid;gap:12px;margin-bottom:12px;}
+  .form-row.col2{grid-template-columns:1fr 1fr;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-label{font-size:11px;font-weight:500;color:var(--text-muted);}
+  .form-label .req{color:var(--red);margin-left:2px;}
+  input[type="text"],input[type="date"],input[type="number"],select{width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg);-webkit-appearance:none;transition:border-color .15s,box-shadow .15s;}
+  input[type="number"]{font-family:var(--mono);}
+  input:focus,select:focus{outline:none;border-color:var(--accent-mid);box-shadow:0 0 0 3px rgba(45,107,71,0.12);background:#fff;}
+  .input-prefix-wrap{position:relative;}
+  .input-prefix{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
+  .input-prefix-wrap input{padding-left:22px;}
+  .divider{height:1px;background:var(--border);margin:20px 0;}
+  .sales-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .sales-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+  .sales-item-label{font-size:11px;color:var(--text-muted);font-weight:500;margin-bottom:8px;}
+  .sales-item-row{display:flex;gap:8px;margin-bottom:6px;}
+  .sales-item-row:last-child{margin-bottom:0;}
+  .sales-sub-label{font-size:11px;color:var(--text-hint);min-width:32px;padding-top:10px;}
+  .btn-submit{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:background .15s,transform .1s;margin-top:8px;}
+  .btn-submit:hover{background:var(--accent-mid);}
+  .btn-submit:active{transform:scale(0.99);}
+  .btn-submit:disabled{background:var(--text-hint);cursor:not-allowed;}
+  .alert{display:none;border-radius:var(--radius);padding:14px 16px;font-size:14px;font-weight:500;text-align:center;margin-top:12px;}
+  .alert-success{background:var(--accent-light);border:1px solid rgba(45,107,71,0.2);color:var(--accent-mid);}
+  .alert-error{background:var(--red-light);border:1px solid rgba(192,57,43,0.2);color:var(--red);}
+  .dash-header{margin-bottom:20px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .dash-title{font-size:20px;font-weight:700;}
+  .dash-date{font-size:12px;color:var(--text-muted);}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+  .kpi-label{font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:500;}
+  .kpi-value{font-size:22px;font-weight:700;font-family:var(--mono);letter-spacing:-.02em;}
+  .kpi-sub{font-size:11px;color:var(--text-hint);margin-top:3px;}
+  .kpi-card.highlight{background:var(--accent);border-color:var(--accent);}
+  .kpi-card.highlight .kpi-label{color:rgba(255,255,255,0.7);}
+  .kpi-card.highlight .kpi-value{color:#fff;}
+  .kpi-card.highlight .kpi-sub{color:rgba(255,255,255,0.55);}
+  .section-title{font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;}
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:14px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+  .store-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:14px;}
+  .store-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;}
+  .store-table th{background:var(--bg);padding:9px 14px;text-align:right;font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;border-bottom:1px solid var(--border);}
+  .store-table th:first-child{text-align:left;}
+  .store-table td{padding:10px 14px;text-align:right;border-bottom:1px solid var(--border);color:var(--text);}
+  .store-table td:first-child{text-align:left;font-weight:500;}
+  .store-table tr:last-child td{border-bottom:none;}
+  .store-table tr:hover td{background:var(--bg);}
+  .mono{font-family:var(--mono);}
+  .brand-pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:100px;font-weight:500;margin-left:5px;}
+  .brand-komei{background:var(--blue-light);color:var(--blue);}
+  .brand-chugoku{background:var(--amber-light);color:var(--amber);}
+  .brand-other{background:var(--accent-light);color:var(--accent-mid);}
+  .bar-cell{display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+  .bar-bg{width:60px;height:4px;background:var(--border);border-radius:2px;}
+  .bar-fill{height:4px;border-radius:2px;background:var(--accent-mid);}
+  .no-data{text-align:center;padding:32px;color:var(--text-hint);font-size:13px;}
+  .filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .filter-btn{padding:6px 14px;border:1px solid var(--border-strong);border-radius:100px;background:var(--surface);font-family:var(--font);font-size:12px;cursor:pointer;color:var(--text-muted);transition:all .15s;}
+  .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  select.date-filter{padding:6px 12px;border:1px solid var(--border-strong);border-radius:100px;background:var(--surface);font-family:var(--font);font-size:12px;color:var(--text-muted);cursor:pointer;}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-overlay{text-align:center;padding:48px;color:var(--text-hint);font-size:14px;}
+  @media(max-width:600px){
+    .kpi-grid{grid-template-columns:1fr 1fr;}
+    .grid2{grid-template-columns:1fr;}
+    .sales-grid{grid-template-columns:1fr;}
+    .page{padding:16px 14px;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">WEST</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('form',this)">売上入力</button>
+    <button class="nav-tab" onclick="showPage('dashboard',this)">ダッシュボード</button>
+  </div>
+  <div class="nav-status status-loading" id="nav-status">接続中...</div>
+</nav>
+
+<div class="page active" id="page-form">
+  <div class="form-card">
+    <div class="form-section-title">基本情報</div>
+    <div class="form-row col2">
+      <div class="form-group"><label class="form-label">日付 <span class="req">*</span></label><input type="date" id="f-date"></div>
+      <div class="form-group"><label class="form-label">報告者名 <span class="req">*</span></label><input type="text" id="f-reporter" placeholder="例：加戸 優"></div>
+    </div>
+    <div class="form-row col2">
+      <div class="form-group"><label class="form-label">ブランド <span class="req">*</span></label>
+        <select id="f-brand"><option value="">選択してください</option><option value="小明">小明</option><option value="中国">中国</option><option value="その他">その他</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">店舗名 <span class="req">*</span></label><input type="text" id="f-store" placeholder="例：平尾、新宮、麦野"></div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-section-title">売上実績</div>
+    <div class="sales-grid">
+      <div class="sales-item"><div class="sales-item-label">実績合計</div>
+        <div class="sales-item-row"><div class="sales-sub-label">売上</div><div class="input-prefix-wrap" style="flex:1"><span class="input-prefix">¥</span><input type="number" id="f-total" placeholder="0" min="0"></div></div>
+        <div class="sales-item-row"><div class="sales-sub-label">客数</div><input type="number" id="f-total-guests" placeholder="0" min="0" style="flex:1"></div>
+      </div>
+      <div class="sales-item"><div class="sales-item-label">昼</div>
+        <div class="sales-item-row"><div class="sales-sub-label">売上</div><div class="input-prefix-wrap" style="flex:1"><span class="input-prefix">¥</span><input type="number" id="f-lunch" placeholder="0" min="0"></div></div>
+        <div class="sales-item-row"><div class="sales-sub-label">客数</div><input type="number" id="f-lunch-guests" placeholder="0" min="0" style="flex:1"></div>
+      </div>
+      <div class="sales-item"><div class="sales-item-label">夜</div>
+        <div class="sales-item-row"><div class="sales-sub-label">売上</div><div class="input-prefix-wrap" style="flex:1"><span class="input-prefix">¥</span><input type="number" id="f-dinner" placeholder="0" min="0"></div></div>
+        <div class="sales-item-row"><div class="sales-sub-label">客数</div><input type="number" id="f-dinner-guests" placeholder="0" min="0" style="flex:1"></div>
+      </div>
+      <div class="sales-item"><div class="sales-item-label">客単価</div>
+        <div class="sales-item-row"><div class="sales-sub-label">昼</div><div class="input-prefix-wrap" style="flex:1"><span class="input-prefix">¥</span><input type="number" id="f-lunch-unit" placeholder="自動計算" min="0"></div></div>
+        <div class="sales-item-row"><div class="sales-sub-label">夜</div><div class="input-prefix-wrap" style="flex:1"><span class="input-prefix">¥</span><input type="number" id="f-dinner-unit" placeholder="自動計算" min="0"></div></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="form-section-title">デリバリー</div>
+    <div class="form-row col2">
+      <div class="sales-item"><div class="sales-item-label">TO（テイクアウト）</div>
+        <div class="sales-item-row"><div class="sales-sub-label">売上</div><div class="input-prefix-wrap" style="flex:1"><span class="input-prefix">¥</span><input type="number" id="f-to" placeholder="0" min="0"></div></div>
+        <div class="sales-item-row"><div class="sales-sub-label">件数</div><input type="number" id="f-to-count" placeholder="0" min="0" style="flex:1"></div>
+      </div>
+      <div class="sales-item"><div class="sales-item-label">Uber Eats</div>
+        <div class="sales-item-row"><div class="sales-sub-label">売上</div><div class="input-prefix-wrap" style="flex:1"><span class="input-prefix">¥</span><input type="number" id="f-uber" placeholder="0" min="0"></div></div>
+        <div class="sales-item-row"><div class="sales-sub-label">件数</div><input type="number" id="f-uber-count" placeholder="0" min="0" style="flex:1"></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="form-section-title">特別売上（任意）</div>
+    <div class="form-row col2">
+      <div class="form-group"><label class="form-label">内容</label><input type="text" id="f-special-note" placeholder="例：ケータリング、宴会"></div>
+      <div class="form-group"><label class="form-label">金額</label><div class="input-prefix-wrap"><span class="input-prefix">¥</span><input type="number" id="f-special" placeholder="0" min="0"></div></div>
+    </div>
+  </div>
+
+  <button class="btn-submit" id="submit-btn" onclick="submitForm()">報告を送信する</button>
+  <div class="alert alert-success" id="alert-success">✓ 報告が送信されました。お疲れ様です！</div>
+  <div class="alert alert-error" id="alert-error" id="alert-error">送信に失敗しました。もう一度お試しください。</div>
+</div>
+
+<div class="page" id="page-dashboard">
+  <div class="dash-header">
+    <div><div class="dash-title">売上ダッシュボード</div><div class="dash-date" id="dash-date-label"></div></div>
+    <select class="date-filter" id="date-filter" onchange="loadDashboard()"></select>
+  </div>
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="setFilter('all',this)">全ブランド</button>
+    <button class="filter-btn" onclick="setFilter('小明',this)">小明</button>
+    <button class="filter-btn" onclick="setFilter('中国',this)">中国</button>
+    <button class="filter-btn" onclick="setFilter('その他',this)">その他</button>
+    <button class="filter-btn" onclick="loadDashboard()" style="margin-left:auto">↻ 更新</button>
+  </div>
+  <div id="dashboard-content"><div class="loading-overlay">データを読み込み中...</div></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://zlzmchwghzejyacjwtyq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oPCMdP1RTlWzjBvDHIBZnw_1BSH_gdy';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allRecords = [];
+let brandFilter = 'all';
+let chartTime = null, chartBrand = null;
+
+async function checkConnection() {
+  try {
+    const { error } = await sb.from('sales_reports').select('id').limit(1);
+    const el = document.getElementById('nav-status');
+    if (error) { el.textContent = '接続エラー'; el.className = 'nav-status status-err'; }
+    else { el.textContent = '● 接続済み'; el.className = 'nav-status status-ok'; }
+  } catch(e) {
+    const el = document.getElementById('nav-status');
+    el.textContent = '接続エラー'; el.className = 'nav-status status-err';
+  }
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+}
+
+function setFilter(brand, btn) {
+  brandFilter = brand;
+  document.querySelectorAll('.filter-btn').forEach(b => { if(!b.getAttribute('onclick').includes('loadDashboard')) b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderDashboard();
+}
+
+async function submitForm() {
+  const date = document.getElementById('f-date').value;
+  const reporter = document.getElementById('f-reporter').value.trim();
+  const brand = document.getElementById('f-brand').value;
+  const store = document.getElementById('f-store').value.trim();
+  const total = parseInt(document.getElementById('f-total').value) || 0;
+  if (!date || !reporter || !brand || !store || !total) { alert('日付・報告者・ブランド・店舗名・実績売上は必須です'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>送信中...';
+
+  const lunchV = parseInt(document.getElementById('f-lunch').value)||0;
+  const lunchG = parseInt(document.getElementById('f-lunch-guests').value)||0;
+  const dinnerV = parseInt(document.getElementById('f-dinner').value)||0;
+  const dinnerG = parseInt(document.getElementById('f-dinner-guests').value)||0;
+
+  const { error } = await sb.from('sales_reports').insert({
+    report_date: date, reporter, brand, store,
+    total_sales: total,
+    total_guests: parseInt(document.getElementById('f-total-guests').value)||0,
+    lunch_sales: lunchV, lunch_guests: lunchG,
+    dinner_sales: dinnerV, dinner_guests: dinnerG,
+    lunch_unit: parseInt(document.getElementById('f-lunch-unit').value)||(lunchG?Math.round(lunchV/lunchG):0),
+    dinner_unit: parseInt(document.getElementById('f-dinner-unit').value)||(dinnerG?Math.round(dinnerV/dinnerG):0),
+    to_sales: parseInt(document.getElementById('f-to').value)||0,
+    to_count: parseInt(document.getElementById('f-to-count').value)||0,
+    uber_sales: parseInt(document.getElementById('f-uber').value)||0,
+    uber_count: parseInt(document.getElementById('f-uber-count').value)||0,
+    special_sales: parseInt(document.getElementById('f-special').value)||0,
+    special_note: document.getElementById('f-special-note').value.trim(),
+  });
+
+  btn.disabled = false;
+  btn.textContent = '報告を送信する';
+
+  if (error) { showAlert('alert-error'); console.error(error); }
+  else {
+    showAlert('alert-success');
+    ['f-reporter','f-store','f-total','f-total-guests','f-lunch','f-lunch-guests','f-dinner','f-dinner-guests','f-lunch-unit','f-dinner-unit','f-to','f-to-count','f-uber','f-uber-count','f-special','f-special-note'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('f-brand').value='';
+  }
+}
+
+function showAlert(id) {
+  ['alert-success','alert-error'].forEach(i => document.getElementById(i).style.display='none');
+  const el = document.getElementById(id);
+  el.style.display='block';
+  setTimeout(()=>el.style.display='none', 4000);
+}
+
+async function loadDashboard() {
+  document.getElementById('dashboard-content').innerHTML = '<div class="loading-overlay">データを読み込み中...</div>';
+  const sel = document.getElementById('date-filter');
+  const dateVal = sel.value;
+
+  let query = sb.from('sales_reports').select('*').order('report_date',{ascending:false});
+  if (dateVal && dateVal !== 'all') query = query.eq('report_date', dateVal);
+
+  const { data, error } = await query;
+  if (error) { document.getElementById('dashboard-content').innerHTML = '<div class="no-data">データの読み込みに失敗しました</div>'; return; }
+  allRecords = data || [];
+
+  // 日付セレクト構築
+  const dates = [...new Set(allRecords.map(r=>r.report_date))].sort().reverse();
+  const today = new Date().toISOString().split('T')[0];
+  const current = sel.value || today;
+  sel.innerHTML = `<option value="all">全期間</option>`;
+  dates.forEach(d => {
+    const [y,m,dy] = d.split('-');
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = `${y}年${parseInt(m)}月${parseInt(dy)}日${d===today?' (今日)':''}`;
+    sel.appendChild(opt);
+  });
+  if ([...sel.options].find(o=>o.value===current)) sel.value=current;
+
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const dateVal = document.getElementById('date-filter').value;
+  const today = new Date().toISOString().split('T')[0];
+  let data = allRecords;
+  if (dateVal && dateVal !== 'all') data = data.filter(r=>r.report_date===dateVal);
+  if (brandFilter !== 'all') data = data.filter(r=>r.brand===brandFilter);
+
+  const label = dateVal==='all'?`全期間（${[...new Set(allRecords.map(r=>r.report_date))].length}日分）`:
+    (() => { const [y,m,d]=dateVal.split('-'); return `${y}年${parseInt(m)}月${parseInt(d)}日`; })();
+  document.getElementById('dash-date-label').textContent = label;
+
+  const grandTotal = data.reduce((s,r)=>s+r.total_sales,0);
+  const grandGuests = data.reduce((s,r)=>s+r.total_guests,0);
+  const grandDelivery = data.reduce((s,r)=>s+r.to_sales+r.uber_sales,0);
+  const storeCount = [...new Set(data.map(r=>r.store))].length;
+
+  document.getElementById('dashboard-content').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card highlight"><div class="kpi-label">全店合計売上</div><div class="kpi-value">${grandTotal?'¥'+grandTotal.toLocaleString():'—'}</div><div class="kpi-sub">${storeCount}店舗分</div></div>
+      <div class="kpi-card"><div class="kpi-label">総客数</div><div class="kpi-value">${grandGuests?grandGuests.toLocaleString()+'名':'—'}</div><div class="kpi-sub">全店合計</div></div>
+      <div class="kpi-card"><div class="kpi-label">平均客単価</div><div class="kpi-value">${grandGuests?'¥'+Math.round(grandTotal/grandGuests).toLocaleString():'—'}</div><div class="kpi-sub">全店平均</div></div>
+      <div class="kpi-card"><div class="kpi-label">TO + Uber</div><div class="kpi-value">${grandDelivery?'¥'+grandDelivery.toLocaleString():'—'}</div><div class="kpi-sub">デリバリー合計</div></div>
+    </div>
+    <div class="grid2">
+      <div class="chart-card"><div class="section-title">昼・夜 売上内訳</div><div style="position:relative;height:200px"><canvas id="chart-time"></canvas></div></div>
+      <div class="chart-card"><div class="section-title">ブランド別売上</div><div style="position:relative;height:200px"><canvas id="chart-brand"></canvas></div></div>
+    </div>
+    <div class="store-table-wrap">
+      <div class="section-title" style="padding:14px 16px 0">店舗別売上一覧</div>
+      <table class="store-table">
+        <thead><tr><th style="width:28%">店舗</th><th style="width:18%">売上</th><th style="width:12%">客数</th><th style="width:12%">単価</th><th style="width:10%">TO</th><th style="width:10%">Uber</th><th style="width:10%">割合</th></tr></thead>
+        <tbody id="store-tbody"></tbody>
+      </table>
+    </div>`;
+
+  const storeMap = {};
+  data.forEach(r => {
+    if (!storeMap[r.store]) storeMap[r.store]={brand:r.brand,total:0,guests:0,to:0,uber:0,lunch:0,dinner:0};
+    const s=storeMap[r.store];
+    s.total+=r.total_sales;s.guests+=r.total_guests;s.to+=r.to_sales;s.uber+=r.uber_sales;s.lunch+=r.lunch_sales;s.dinner+=r.dinner_sales;
+  });
+  const sorted=Object.entries(storeMap).sort((a,b)=>b[1].total-a[1].total);
+  const maxTotal=sorted.length?sorted[0][1].total:1;
+  const tbody=document.getElementById('store-tbody');
+  tbody.innerHTML=sorted.length===0?'<tr><td colspan="7" class="no-data">データがありません</td></tr>':
+    sorted.map(([name,s])=>{
+      const pct=grandTotal?Math.round(s.total/grandTotal*100):0;
+      const unit=s.guests?Math.round(s.total/s.guests):0;
+      const barW=Math.round(s.total/maxTotal*100);
+      const bc=s.brand==='小明'?'brand-komei':s.brand==='中国'?'brand-chugoku':'brand-other';
+      return `<tr><td>${name}<span class="brand-pill ${bc}">${s.brand}</span></td><td class="mono">¥${s.total.toLocaleString()}</td><td class="mono">${s.guests.toLocaleString()}</td><td class="mono">${unit?'¥'+unit.toLocaleString():'—'}</td><td class="mono">${s.to?'¥'+s.to.toLocaleString():'—'}</td><td class="mono">${s.uber?'¥'+s.uber.toLocaleString():'—'}</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div><span style="font-size:11px;color:var(--text-hint);min-width:28px">${pct}%</span></div></td></tr>`;
+    }).join('');
+
+  if (chartTime) chartTime.destroy();
+  if (chartBrand) chartBrand.destroy();
+  if (sorted.length>0) {
+    chartTime=new Chart(document.getElementById('chart-time'),{
+      type:'bar',
+      data:{labels:sorted.map(([n])=>n),datasets:[
+        {label:'昼',data:sorted.map(([,s])=>s.lunch),backgroundColor:'#9FE1CB',borderWidth:0},
+        {label:'夜',data:sorted.map(([,s])=>s.dinner),backgroundColor:'#1D9E75',borderWidth:0},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:10,boxHeight:10,padding:8}}},
+        scales:{x:{stacked:true,ticks:{font:{size:10},color:'#9c9a92',maxRotation:30}},y:{stacked:true,ticks:{callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10},color:'#9c9a92'},grid:{color:'rgba(0,0,0,0.04)'}}}}
+    });
+    const bt={'小明':0,'中国':0,'その他':0};
+    data.forEach(r=>{bt[r.brand]=(bt[r.brand]||0)+r.total_sales;});
+    const bl=Object.keys(bt).filter(k=>bt[k]>0);
+    chartBrand=new Chart(document.getElementById('chart-brand'),{
+      type:'doughnut',
+      data:{labels:bl,datasets:[{data:bl.map(k=>bt[k]),backgroundColor:['#1D9E75','#BA7517','#1a4a7a'],borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,boxHeight:10,padding:8}},
+        tooltip:{callbacks:{label:ctx=>' ¥'+ctx.parsed.toLocaleString()}}}}
+    });
+  }
+}
+
+document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+checkConnection();
+</script>
+</body>
+</html>
