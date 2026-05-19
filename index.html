@@ -312,25 +312,35 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
       </div>
     </div>
 
-    <!-- 管理者用：店舗情報入力（管理者ログイン時のみ表示） -->
+    <!-- 管理者用：部門→店舗ドロップダウン（管理者ログイン時のみ表示） -->
     <div class="fc" id="admin-store-fields" style="display:none;">
       <div class="fst">店舗情報</div>
       <div class="fr c3">
         <div class="fg"><label class="fl">業態 <span class="rq">*</span></label>
-          <select id="f-brand" onchange="onBrandChange()">
-            <option value="">選択してください</option>
+          <select id="f-brand" onchange="onAdminBrandChange()">
+            <option value="">-- 業態を選択 --</option>
             <option value="焼肉">焼肉</option><option value="焼肉AZUMA">焼肉AZUMA</option>
             <option value="あずま">あずま（蕎麦）</option><option value="うどん">うどん</option>
             <option value="生そば">生そば</option><option value="中国">中国</option>
-            <option value="カフェ">カフェ</option>
-            <option value="東兵衛">東兵衛</option>
+            <option value="カフェ">カフェ</option><option value="東兵衛">東兵衛</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">店舗 <span class="rq">*</span></label>
+          <select id="f-store-sel" disabled onchange="onAdminStoreChange()">
+            <option value="">-- まず業態を選択 --</option>
           </select>
         </div>
         <div class="fg" id="type-wrap" style="display:none"><label class="fl">区分</label>
           <select id="f-type"><option value="通常">通常</option><option value="券売機">券売機</option><option value="24H">24H</option><option value="券売機24H">券売機24H</option></select>
         </div>
-        <div class="fg"><label class="fl">店舗名 <span class="rq">*</span></label><input type="text" id="f-store" placeholder="例：麦野、新宮、平尾"></div>
-        <div class="fg"><label class="fl">店舗番号</label><input type="text" id="f-no" placeholder="例：28"></div>
+      </div>
+      <!-- 選択中の店舗バッジ -->
+      <div id="admin-store-badge" style="display:none;margin-top:10px;">
+        <div style="background:var(--red-mid);border:1px solid rgba(229,0,18,0.15);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span id="admin-badge-store" style="font-size:15px;font-weight:700;"></span>
+          <span id="admin-badge-brand" style="font-size:11px;padding:2px 8px;border-radius:100px;background:var(--red);color:#fff;font-weight:700;"></span>
+          <span id="admin-badge-no" style="font-size:12px;color:var(--text-muted);"></span>
+        </div>
       </div>
     </div>
 
@@ -719,9 +729,36 @@ function showPage(name,btn){
   else if(name==='pw-mgmt') loadPwMgmt();
 }
 
-function onBrandChange(){
-  const b=document.getElementById('f-brand').value;
-  document.getElementById('type-wrap').style.display=(b==='うどん'||b==='あずま')?'flex':'none';
+function onAdminBrandChange(){
+  const brand=document.getElementById('f-brand').value;
+  const sel=document.getElementById('f-store-sel');
+  sel.innerHTML='<option value="">-- 店舗を選択 --</option>';
+  document.getElementById('admin-store-badge').style.display='none';
+  document.getElementById('type-wrap').style.display='none';
+  if(!brand){sel.disabled=true;return;}
+  // storeAuthCacheから店舗一覧取得
+  const stores=storeAuthCache.filter(r=>r.brand===brand).sort((a,b)=>a.store_name.localeCompare(b.store_name,'ja'));
+  stores.forEach(r=>{
+    const o=document.createElement('option');
+    o.value=r.store_name;
+    o.dataset.no=r.store_no||'';
+    o.textContent=r.store_no?`${r.store_name}（No.${r.store_no}）`:r.store_name;
+    sel.appendChild(o);
+  });
+  sel.disabled=false;
+  // うどん・あずまは区分を表示
+  if(brand==='うどん'||brand==='あずま') document.getElementById('type-wrap').style.display='flex';
+}
+
+function onAdminStoreChange(){
+  const sel=document.getElementById('f-store-sel');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value){document.getElementById('admin-store-badge').style.display='none';return;}
+  const brand=document.getElementById('f-brand').value;
+  document.getElementById('admin-badge-store').textContent=opt.value;
+  document.getElementById('admin-badge-brand').textContent=brand;
+  document.getElementById('admin-badge-no').textContent=opt.dataset.no?`No.${opt.dataset.no}`:'';
+  document.getElementById('admin-store-badge').style.display='block';
 }
 
 // ── スタッフデータ ──
@@ -745,8 +782,10 @@ async function doSubmit(){
   let brand,store,no,stype;
   if(currentUser.is_admin){
     brand=document.getElementById('f-brand').value;
-    store=document.getElementById('f-store').value.trim();
-    no=document.getElementById('f-no').value.trim();
+    const storeSel=document.getElementById('f-store-sel');
+    store=storeSel.value;
+    const opt=storeSel.options[storeSel.selectedIndex];
+    no=opt?opt.dataset.no||'':'';
     const tw=document.getElementById('type-wrap');
     stype=tw.style.display!=='none'?document.getElementById('f-type').value:'通常';
   } else {
@@ -795,8 +834,10 @@ async function doSubmit(){
     });
     if(currentUser.is_admin){
       document.getElementById('f-brand').value='';
-      document.getElementById('f-store').value='';
-      document.getElementById('f-no').value='';
+      document.getElementById('f-store-sel').innerHTML='<option value="">-- まず業態を選択 --</option>';
+      document.getElementById('f-store-sel').disabled=true;
+      document.getElementById('admin-store-badge').style.display='none';
+      document.getElementById('type-wrap').style.display='none';
     }
     calcTotal();
     allData=[];
