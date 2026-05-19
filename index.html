@@ -293,14 +293,29 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
 
   <!-- 売上入力 -->
   <div class="page" id="page-form">
-    <div class="ph"><div class="ph-title">売上報告入力</div><div class="ph-sub" id="form-sub">必須項目を入力して送信してください</div></div>
-    <div class="fc">
-      <div class="fst">基本情報</div>
-      <div class="fr c3">
-        <div class="fg"><label class="fl">日付 <span class="rq">*</span></label><input type="date" id="f-date"></div>
-        <div class="fg"><label class="fl">店舗番号</label><input type="text" id="f-no" placeholder="例：28"></div>
-        <div class="fg"><label class="fl">報告者名 <span class="rq">*</span></label><input type="text" id="f-rep" placeholder="例：加戸 優"></div>
+    <div class="ph"><div class="ph-title">売上報告入力</div><div class="ph-sub" id="form-sub"></div></div>
+
+    <!-- 店舗情報バッジ（店舗ログイン時） -->
+    <div id="store-badge" style="display:none;margin-bottom:14px;">
+      <div style="background:var(--red-mid);border:1px solid rgba(229,0,18,0.15);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span id="badge-store-name" style="font-size:16px;font-weight:700;"></span>
+        <span id="badge-brand" style="font-size:11px;padding:2px 8px;border-radius:100px;background:var(--red);color:#fff;font-weight:700;"></span>
+        <span id="badge-no" style="font-size:12px;color:var(--text-muted);"></span>
       </div>
+    </div>
+
+    <!-- 日付（常に表示） -->
+    <div class="fc">
+      <div class="fst">日付</div>
+      <div class="fr c2" style="max-width:400px;">
+        <div class="fg"><label class="fl">日付 <span class="rq">*</span></label><input type="date" id="f-date" style="font-size:16px;padding:12px;"></div>
+        <div class="fg"><label class="fl">報告者名 <span class="rq">*</span></label><input type="text" id="f-rep" placeholder="例：加戸 優" style="font-size:16px;padding:12px;"></div>
+      </div>
+    </div>
+
+    <!-- 管理者用：店舗情報入力（管理者ログイン時のみ表示） -->
+    <div class="fc" id="admin-store-fields" style="display:none;">
+      <div class="fst">店舗情報</div>
       <div class="fr c3">
         <div class="fg"><label class="fl">業態 <span class="rq">*</span></label>
           <select id="f-brand" onchange="onBrandChange()">
@@ -316,26 +331,67 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
           <select id="f-type"><option value="通常">通常</option><option value="券売機">券売機</option><option value="24H">24H</option><option value="券売機24H">券売機24H</option></select>
         </div>
         <div class="fg"><label class="fl">店舗名 <span class="rq">*</span></label><input type="text" id="f-store" placeholder="例：麦野、新宮、平尾"></div>
+        <div class="fg"><label class="fl">店舗番号</label><input type="text" id="f-no" placeholder="例：28"></div>
       </div>
     </div>
+
+    <!-- 隠しフィールド（店舗ログイン時に自動セット） -->
+    <input type="hidden" id="f-brand-hidden">
+    <input type="hidden" id="f-store-hidden">
+    <input type="hidden" id="f-no-hidden">
+    <input type="hidden" id="f-type-hidden" value="通常">
+
+    <!-- 売上入力 -->
     <div class="fc">
       <div class="fst">売上実績</div>
-      <div class="sg">
-        <div class="sb"><div class="sb-l">実績合計</div>
-          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-total" placeholder="0" min="0"></div></div>
-          <div class="sr"><span class="ss">客数</span><input type="number" id="f-tg" placeholder="0" min="0" style="flex:1"></div>
+
+      <!-- 昼・夜入力 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div class="sb" style="background:var(--surface);border:2px solid #B5D4F4;">
+          <div class="sb-l" style="color:#0C447C;font-size:13px;margin-bottom:10px;">☀️ 昼</div>
+          <div class="sr"><span class="ss">売上</span>
+            <div class="pfx" style="flex:1"><span class="pfx-s">¥</span>
+              <input type="number" id="f-lunch" placeholder="0" min="0" style="font-size:16px;padding:10px 10px 10px 20px;" oninput="calcTotal()">
+            </div>
+          </div>
+          <div class="sr"><span class="ss">客数</span>
+            <input type="number" id="f-lg" placeholder="0" min="0" style="flex:1;font-size:15px;padding:10px;" oninput="calcTotal()">
+          </div>
         </div>
-        <div class="sb"><div class="sb-l">昼</div>
-          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-lunch" placeholder="0" min="0"></div></div>
-          <div class="sr"><span class="ss">客数</span><input type="number" id="f-lg" placeholder="0" min="0" style="flex:1"></div>
-        </div>
-        <div class="sb"><div class="sb-l">夜</div>
-          <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-dinner" placeholder="0" min="0"></div></div>
-          <div class="sr"><span class="ss">客数</span><input type="number" id="f-dg" placeholder="0" min="0" style="flex:1"></div>
+        <div class="sb" style="background:var(--surface);border:2px solid #1D9E75;">
+          <div class="sb-l" style="color:#085041;font-size:13px;margin-bottom:10px;">🌙 夜</div>
+          <div class="sr"><span class="ss">売上</span>
+            <div class="pfx" style="flex:1"><span class="pfx-s">¥</span>
+              <input type="number" id="f-dinner" placeholder="0" min="0" style="font-size:16px;padding:10px 10px 10px 20px;" oninput="calcTotal()">
+            </div>
+          </div>
+          <div class="sr"><span class="ss">客数</span>
+            <input type="number" id="f-dg" placeholder="0" min="0" style="flex:1;font-size:15px;padding:10px;" oninput="calcTotal()">
+          </div>
         </div>
       </div>
+
+      <!-- 合計（自動計算） -->
+      <div style="background:var(--red-mid);border:2px solid var(--red);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);">合計（自動計算）</div>
+        <div style="display:flex;gap:20px;align-items:center;">
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">売上合計</div>
+            <div id="calc-total" style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--red);">¥0</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">客数合計</div>
+            <div id="calc-guests" style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--text);">0名</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">客単価</div>
+            <div id="calc-unit" style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--text);">—</div>
+          </div>
+        </div>
+      </div>
+
       <div class="dv"></div>
-      <div class="fst">デリバリー・特別売上</div>
+      <div class="fst">デリバリー・特別売上（任意）</div>
       <div class="fr c4">
         <div class="sb"><div class="sb-l">TO</div>
           <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-to" placeholder="0" min="0"></div></div>
@@ -345,12 +401,13 @@ select.df{padding:5px 10px;border:1px solid var(--border-strong);border-radius:1
           <div class="sr"><span class="ss">売上</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-uber" placeholder="0" min="0"></div></div>
           <div class="sr"><span class="ss">件数</span><input type="number" id="f-uc" placeholder="0" min="0" style="flex:1"></div>
         </div>
-        <div class="sb" style="grid-column:span 2"><div class="sb-l">特別売上（任意）</div>
+        <div class="sb" style="grid-column:span 2"><div class="sb-l">特別売上</div>
           <div class="sr"><span class="ss">内容</span><input type="text" id="f-sn" placeholder="ケータリング、宴会など" style="flex:1"></div>
           <div class="sr"><span class="ss">金額</span><div class="pfx" style="flex:1"><span class="pfx-s">¥</span><input type="number" id="f-sp" placeholder="0" min="0"></div></div>
         </div>
       </div>
     </div>
+
     <button class="btn-red" id="sub-btn" onclick="doSubmit()">報告を送信する</button>
     <div class="alrt al-ok" id="al-ok">✓ 報告が送信されました。お疲れ様です！</div>
     <div class="alrt al-er" id="al-er">送信に失敗しました。もう一度お試しください。</div>
@@ -622,15 +679,34 @@ function buildNav(){
 }
 
 function prefillStoreForm(){
-  // 店舗ログイン時、業態と店舗を自動入力
-  const brandSel=document.getElementById('f-brand');
-  brandSel.value=currentUser.brand||'';
-  document.getElementById('f-store').value=currentUser.store_name;
-  document.getElementById('f-no').value=currentUser.store_no||'';
-  brandSel.disabled=true;
-  document.getElementById('f-store').readOnly=true;
-  document.getElementById('f-no').readOnly=true;
-  onBrandChange();
+  if(currentUser.is_admin){
+    // 管理者：店舗情報入力欄を表示
+    document.getElementById('admin-store-fields').style.display='block';
+    document.getElementById('store-badge').style.display='none';
+  } else {
+    // 店舗：バッジ表示、隠しフィールドにセット
+    document.getElementById('admin-store-fields').style.display='none';
+    document.getElementById('store-badge').style.display='block';
+    document.getElementById('badge-store-name').textContent=currentUser.store_name;
+    document.getElementById('badge-brand').textContent=currentUser.brand||'';
+    document.getElementById('badge-no').textContent=currentUser.store_no?`No.${currentUser.store_no}`:'';
+    document.getElementById('f-brand-hidden').value=currentUser.brand||'';
+    document.getElementById('f-store-hidden').value=currentUser.store_name;
+    document.getElementById('f-no-hidden').value=currentUser.store_no||'';
+  }
+}
+
+function calcTotal(){
+  const lunchSales=parseInt(document.getElementById('f-lunch').value)||0;
+  const dinnerSales=parseInt(document.getElementById('f-dinner').value)||0;
+  const lunchGuests=parseInt(document.getElementById('f-lg').value)||0;
+  const dinnerGuests=parseInt(document.getElementById('f-dg').value)||0;
+  const total=lunchSales+dinnerSales;
+  const guests=lunchGuests+dinnerGuests;
+  const unit=guests?Math.round(total/guests):0;
+  document.getElementById('calc-total').textContent=total?'¥'+total.toLocaleString():'¥0';
+  document.getElementById('calc-guests').textContent=guests?guests.toLocaleString()+'名':'0名';
+  document.getElementById('calc-unit').textContent=unit?'¥'+unit.toLocaleString():'—';
 }
 
 function showPage(name,btn){
@@ -665,35 +741,65 @@ async function loadStaffData(){
 async function doSubmit(){
   const date=document.getElementById('f-date').value;
   const rep=document.getElementById('f-rep').value.trim();
-  const brand=document.getElementById('f-brand').value;
-  const store=document.getElementById('f-store').value.trim();
-  const total=parseInt(document.getElementById('f-total').value)||0;
-  if(!date||!rep||!brand||!store||!total){alert('日付・報告者・業態・店舗名・実績売上は必須です');return;}
-  const btn=document.getElementById('sub-btn');
-  btn.disabled=true;btn.innerHTML='<span class="spin"></span>送信中...';
+
+  // 業態・店舗名は管理者か店舗かで取得先が違う
+  let brand,store,no,stype;
+  if(currentUser.is_admin){
+    brand=document.getElementById('f-brand').value;
+    store=document.getElementById('f-store').value.trim();
+    no=document.getElementById('f-no').value.trim();
+    const tw=document.getElementById('type-wrap');
+    stype=tw.style.display!=='none'?document.getElementById('f-type').value:'通常';
+  } else {
+    brand=document.getElementById('f-brand-hidden').value;
+    store=document.getElementById('f-store-hidden').value;
+    no=document.getElementById('f-no-hidden').value;
+    stype='通常';
+  }
+
   const lV=parseInt(document.getElementById('f-lunch').value)||0;
   const lG=parseInt(document.getElementById('f-lg').value)||0;
   const dV=parseInt(document.getElementById('f-dinner').value)||0;
   const dG=parseInt(document.getElementById('f-dg').value)||0;
-  const tw=document.getElementById('type-wrap');
-  const stype=tw.style.display!=='none'?document.getElementById('f-type').value:'通常';
+  const total=lV+dV;
+  const totalGuests=lG+dG;
+
+  if(!date||!rep||!brand||!store||!total){
+    alert('日付・報告者名・昼または夜の売上は必須です');return;
+  }
+
+  const btn=document.getElementById('sub-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>送信中...';
+
   const{error}=await sb.from('sales_reports').insert({
     report_date:date,reporter:rep,brand,
-    store_no:document.getElementById('f-no').value.trim(),
-    store_type:stype,store,
-    total_sales:total,total_guests:parseInt(document.getElementById('f-tg').value)||0,
-    lunch_sales:lV,lunch_guests:lG,dinner_sales:dV,dinner_guests:dG,
-    lunch_unit:lG?Math.round(lV/lG):0,dinner_unit:dG?Math.round(dV/dG):0,
-    to_sales:parseInt(document.getElementById('f-to').value)||0,to_count:parseInt(document.getElementById('f-tc').value)||0,
-    uber_sales:parseInt(document.getElementById('f-uber').value)||0,uber_count:parseInt(document.getElementById('f-uc').value)||0,
+    store_no:no,store_type:stype,store,
+    total_sales:total,total_guests:totalGuests,
+    lunch_sales:lV,lunch_guests:lG,
+    dinner_sales:dV,dinner_guests:dG,
+    lunch_unit:lG?Math.round(lV/lG):0,
+    dinner_unit:dG?Math.round(dV/dG):0,
+    to_sales:parseInt(document.getElementById('f-to').value)||0,
+    to_count:parseInt(document.getElementById('f-tc').value)||0,
+    uber_sales:parseInt(document.getElementById('f-uber').value)||0,
+    uber_count:parseInt(document.getElementById('f-uc').value)||0,
     special_sales:parseInt(document.getElementById('f-sp').value)||0,
     special_note:document.getElementById('f-sn').value.trim(),
   });
+
   btn.disabled=false;btn.textContent='報告を送信する';
   if(error){showAl('al-er');console.error(error);}
   else{
     showAl('al-ok');
-    ['f-rep','f-total','f-tg','f-lunch','f-lg','f-dinner','f-dg','f-to','f-tc','f-uber','f-uc','f-sp','f-sn'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['f-rep','f-lunch','f-lg','f-dinner','f-dg','f-to','f-tc','f-uber','f-uc','f-sp','f-sn'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.value='';
+    });
+    if(currentUser.is_admin){
+      document.getElementById('f-brand').value='';
+      document.getElementById('f-store').value='';
+      document.getElementById('f-no').value='';
+    }
+    calcTotal();
     allData=[];
   }
 }
