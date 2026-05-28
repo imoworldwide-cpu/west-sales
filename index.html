@@ -1110,10 +1110,16 @@ function onStBrandChange(){
   const sel=document.getElementById('st-store');
   sel.innerHTML='<option value="">-- 店舗を選択 --</option>';
   if(!brand){sel.disabled=true;return;}
-  const fromSales=[...new Set(allData.filter(r=>r.brand===brand).map(r=>r.store))];
-  const fromStaff=brandStoreMap[brand]?[...brandStoreMap[brand]]:[];
-  const all=[...new Set([...fromSales,...fromStaff])].sort();
-  all.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  // storeAuthCacheから重複なしで取得（登録済み店舗のみ）
+  const stores=storeAuthCache
+    .filter(r=>r.brand===brand)
+    .sort((a,b)=>a.store_name.localeCompare(b.store_name,'ja'));
+  stores.forEach(r=>{
+    const o=document.createElement('option');
+    o.value=r.store_name;
+    o.textContent=r.store_name;
+    sel.appendChild(o);
+  });
   sel.disabled=false;
   document.getElementById('store-result').innerHTML='<div class="ld" style="padding:20px;color:var(--text-hint);font-size:13px;text-align:center;">店舗を選択してください</div>';
 }
